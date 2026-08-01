@@ -1,0 +1,708 @@
+// ============================================================
+// ScaleOn Internship Study Portal - Prisma Schema
+// Engine: PostgreSQL
+// Design goal: scale from 100 to 100,000+ interns without
+// architectural changes. Credentials are centralized in
+// UserAccount; domain data lives in Admin / Intern.
+// Roles & permissions are fully database-driven.
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------------
+// Enums
+// ------------------------------------------------------------
+
+enum UserType {
+  ADMIN
+  INTERN
+  MENTOR
+}
+
+enum AccountStatus {
+  PENDING // created, awaiting first login
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+  DELETED // soft delete
+}
+
+enum InternStatus {
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  DROPPED
+  SUSPENDED
+}
+
+enum BatchStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum RoleStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum EnrollmentStatus {
+  ENROLLED
+  ACTIVE
+  COMPLETED
+  WITHDRAWN
+  TRANSFERRED
+}
+
+enum NotificationType {
+  SYSTEM
+  ACCOUNT
+  CREDENTIAL
+  ANNOUNCEMENT
+  REMINDER
+  CERTIFICATE
+}
+
+// ------------------------------------------------------------
+// Roles & Permissions (RBAC, database-driven)
+// ------------------------------------------------------------
+
+model Role {
+  id          String     @id @default(uuid())
+  name        String     @unique // "Super Admin", "Admin", "Mentor", "Intern"
+  slug        String     @unique // "super_admin", "admin", "mentor", "intern"
+  description String?
+  level       Int        @default(0) // higher = more privileged; used for hierarchy checks
+  isSystem    Boolean    @default(false) // system roles cannot be deleted
+  status      RoleStatus @default(ACTIVE)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  userAccounts UserAccount[]
+  permissions  RolePermission[]
+
+  @@index([status])
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  key         String   @unique // "intern.create", "session.terminate", ...
+  name        String
+  group       String // "intern", "admin", "auth", "settings", ...
+  description String?
+  createdAt   DateTime @default(now())
+
+  roles RolePermission[]
+
+  @@index([group])
+}
+
+model RolePermission {
+  id           String     @id @default(uuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime   @default(now())
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+}
+
+// ------------------------------------------------------------
+// Central authentication identity
+// ------------------------------------------------------------
+
+model UserAccount {
+  id                  String        @id @default(uuid())
+  username            String?       @unique // SO-AI-0001 (interns). null allowed for admins
+  email               String        @unique
+  phone               String?
+  passwordHash        String?       // null when only Google auth is used
+  googleId            String?       @unique
+  userType            UserType
+  status              AccountStatus @default(PENDING)
+  roleId              String
+  isFirstLogin        Boolean       @default(true)
+  mustChangePassword  Boolean       @default(true)
+  termsAcceptedAt     DateTime?
+  emailVerifiedAt     DateTime?
+  lastLoginAt         DateTime?
+  failedLoginAttempts Int           @default(0)
+  lockedUntil         DateTime?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  role                Role                 @relation(fields: [roleId], references: [id])
+  admin               Admin?
+  intern              Intern?
+  sessions            Session[]
+  refreshTokens       RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+  loginHistory        LoginHistory[]
+  activityLogs        ActivityLog[]
+  notifications       Notification[]
+
+  @@index([userType])
+  @@index([status])
+  @@index([roleId])
+}
+
+// ------------------------------------------------------------
+// Admin domain data
+// ------------------------------------------------------------
+
+model Admin {
+  id            String   @id @default(uuid())
+  userAccountId String   @unique
+  fullName      String
+  profileImage  String?
+  designation   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  userAccount   UserAccount @relation(fields: [userAccountId], references: [id], onDelete: Cascade)
+  mentoredInterns Intern[]  @relation("InternMentor")
+}
+
+// ------------------------------------------------------------
+// Intern domain data
+// ------------------------------------------------------------
+
+model Intern {
+  id               String       @id @default(uuid())
+  userAccountId    String       @unique
+  scaleonId        String       @unique // SOINT260001
+  fullName         String
+  internshipRoleId String
+  batchId          String?
+  mentorId         String?
+  startDate        DateTime?
+  endDate          DateTime?
+  status           InternStatus @default(ACTIVE)
+  currentPhase     String?
+  currentModule    String?
+  overallProgress  Float        @default(0) // 0..100
+  attendancePercent Float       @default(0) // 0..100
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  userAccount    UserAccount            @relation(fields: [userAccountId], references: [id], onDelete: Cascade)
+  internshipRole InternshipRole         @relation(fields: [internshipRoleId], references: [id])
+  batch          Batch?                 @relation(fields: [batchId], references: [id])
+  mentor         Admin?                 @relation("InternMentor", fields: [mentorId], references: [id])
+  profile        InternProfile?
+  enrollments    InternshipEnrollment[]
+  moduleProgress ModuleProgress[]
+  submissions    AssignmentSubmission[]
+  streak         InternStreak?
+  dailyActivity  DailyActivity[]
+  liveAttendance LiveSessionAttendee[]
+  supportTickets SupportTicket[]
+
+  @@index([internshipRoleId])
+  @@index([batchId])
+  @@index([status])
+  @@index([mentorId])
+  @@index([fullName])
+}
+
+model InternProfile {
+  id                 String    @id @default(uuid())
+  internId           String    @unique
+  photo              String?
+  bio                String?
+  linkedin           String?
+  github             String?
+  portfolio          String?
+  resumeUrl          String?
+  skills             String[]  @default([])
+  college            String?
+  university         String?
+  branch             String?
+  semester           String?
+  expectedGraduation DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  intern Intern @relation(fields: [internId], references: [id], onDelete: Cascade)
+}
+
+// ------------------------------------------------------------
+// Internship roles & batches
+// ------------------------------------------------------------
+
+model InternshipRole {
+  id             String     @id @default(uuid())
+  name           String     @unique // "Artificial Intelligence"
+  code           String     @unique // "AI", "SMM", "BD", "SALES" -> used in username
+  usernamePrefix String     // computed: SO-AI, SO-SMM (stored for fast generation)
+  description    String?
+  status         RoleStatus @default(ACTIVE)
+  usernameSeq    Int        @default(0) // last issued username sequence for this role
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  interns     Intern[]
+  enrollments InternshipEnrollment[]
+
+  @@index([status])
+}
+
+model Batch {
+  id        String      @id @default(uuid())
+  name      String      @unique // "Batch 2026 - Jan"
+  code      String      @unique // "B2601"
+  startDate DateTime?
+  endDate   DateTime?
+  capacity  Int?
+  status    BatchStatus @default(UPCOMING)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  interns     Intern[]
+  enrollments InternshipEnrollment[]
+
+  @@index([status])
+}
+
+model InternshipEnrollment {
+  id               String           @id @default(uuid())
+  internId         String
+  internshipRoleId String
+  batchId          String?
+  status           EnrollmentStatus @default(ENROLLED)
+  startDate        DateTime?
+  endDate          DateTime?
+  enrolledAt       DateTime         @default(now())
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  intern         Intern         @relation(fields: [internId], references: [id], onDelete: Cascade)
+  internshipRole InternshipRole @relation(fields: [internshipRoleId], references: [id])
+  batch          Batch?         @relation(fields: [batchId], references: [id])
+
+  @@index([internId])
+  @@index([internshipRoleId])
+  @@index([batchId])
+  @@index([status])
+}
+
+// ------------------------------------------------------------
+// Sessions, tokens & auth history
+// ------------------------------------------------------------
+
+model Session {
+  id             String    @id @default(uuid())
+  userAccountId  String
+  ipAddress      String?
+  userAgent      String?
+  browser        String?
+  os             String?
+  device         String?
+  country        String?
+  city           String?
+  isActive       Boolean   @default(true)
+  lastActivityAt DateTime  @default(now())
+  expiresAt      DateTime
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  userAccount   UserAccount    @relation(fields: [userAccountId], references: [id], onDelete: Cascade)
+  refreshTokens RefreshToken[]
+
+  @@index([userAccountId])
+  @@index([isActive])
+}
+
+model RefreshToken {
+  id                String    @id @default(uuid())
+  userAccountId     String
+  sessionId         String?
+  tokenHash         String    @unique // sha-256 of the raw token; raw token never stored
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  replacedByTokenId String? // rotation chain
+  ipAddress         String?
+  userAgent         String?
+  createdAt         DateTime  @default(now())
+
+  userAccount UserAccount @relation(fields: [userAccountId], references: [id], onDelete: Cascade)
+  session     Session?    @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([userAccountId])
+  @@index([sessionId])
+}
+
+model PasswordResetToken {
+  id            String    @id @default(uuid())
+  userAccountId String
+  tokenHash     String    @unique
+  expiresAt     DateTime
+  usedAt        DateTime?
+  ipAddress     String?
+  createdAt     DateTime  @default(now())
+
+  userAccount UserAccount @relation(fields: [userAccountId], references: [id], onDelete: Cascade)
+
+  @@index([userAccountId])
+}
+
+model LoginHistory {
+  id             String   @id @default(uuid())
+  userAccountId  String?
+  identifierUsed String // username/email attempted
+  success        Boolean
+  failureReason  String?
+  ipAddress      String?
+  userAgent      String?
+  browser        String?
+  os             String?
+  device         String?
+  country        String?
+  city           String?
+  createdAt      DateTime @default(now())
+
+  userAccount UserAccount? @relation(fields: [userAccountId], references: [id], onDelete: SetNull)
+
+  @@index([userAccountId])
+  @@index([success])
+  @@index([createdAt])
+}
+
+// ------------------------------------------------------------
+// Logs, notifications & settings
+// ------------------------------------------------------------
+
+model ActivityLog {
+  id            String   @id @default(uuid())
+  userAccountId String?
+  action        String
+  entityType    String?
+  entityId      String?
+  metadata      Json?
+  ipAddress     String?
+  createdAt     DateTime @default(now())
+
+  userAccount UserAccount? @relation(fields: [userAccountId], references: [id], onDelete: SetNull)
+
+  @@index([userAccountId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?
+  actorType  String? // ADMIN / INTERN / SYSTEM
+  action     String
+  entityType String?
+  entityId   String?
+  before     Json?
+  after      Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+model Notification {
+  id            String           @id @default(uuid())
+  userAccountId String
+  type          NotificationType @default(SYSTEM)
+  title         String
+  message       String
+  data          Json?
+  readAt        DateTime?
+  createdAt     DateTime         @default(now())
+
+  userAccount UserAccount @relation(fields: [userAccountId], references: [id], onDelete: Cascade)
+
+  @@index([userAccountId])
+  @@index([readAt])
+}
+
+model Setting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       Json
+  group       String   @default("general")
+  description String?
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  @@index([group])
+}
+
+// ------------------------------------------------------------
+// Learning System (Phases, Modules, Content)
+// ------------------------------------------------------------
+
+enum PhaseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ModuleStatus {
+  LOCKED
+  AVAILABLE
+  IN_PROGRESS
+  COMPLETED
+}
+
+model LearningPhase {
+  id          String      @id @default(uuid())
+  name        String      // "Phase 1", "Phase 2"
+  slug        String      @unique
+  description String?
+  order       Int         @default(0) // display order
+  status      PhaseStatus @default(DRAFT)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  modules LearningModule[]
+
+  @@index([status])
+}
+
+model LearningModule {
+  id          String      @id @default(uuid())
+  phaseId     String
+  title       String
+  description String?
+  content     String?     // markdown or rich text content
+  videoUrl    String?
+  resourceUrl String?
+  order       Int         @default(0)
+  duration    Int?        // estimated minutes
+  points      Int         @default(10) // XP points for completion
+  status      PhaseStatus @default(DRAFT)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  phase       LearningPhase    @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  progress    ModuleProgress[]
+  assignments Assignment[]
+
+  @@index([phaseId])
+  @@index([status])
+}
+
+model ModuleProgress {
+  id           String       @id @default(uuid())
+  internId     String
+  moduleId     String
+  status       ModuleStatus @default(LOCKED)
+  startedAt    DateTime?
+  completedAt  DateTime?
+  score        Int?         // quiz/assignment score 0-100
+  timeSpent    Int          @default(0) // minutes
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  intern Intern         @relation(fields: [internId], references: [id], onDelete: Cascade)
+  module LearningModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([internId, moduleId])
+  @@index([internId])
+  @@index([moduleId])
+  @@index([status])
+}
+
+// ------------------------------------------------------------
+// Assignments
+// ------------------------------------------------------------
+
+enum AssignmentStatus {
+  PENDING
+  SUBMITTED
+  REVIEWED
+  APPROVED
+  REJECTED
+}
+
+model Assignment {
+  id          String   @id @default(uuid())
+  moduleId    String?
+  title       String
+  description String?
+  instructions String?
+  dueDate     DateTime?
+  maxScore    Int      @default(100)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  module      LearningModule?      @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  submissions AssignmentSubmission[]
+
+  @@index([moduleId])
+}
+
+model AssignmentSubmission {
+  id            String           @id @default(uuid())
+  assignmentId  String
+  internId      String
+  submissionUrl String?
+  submissionText String?
+  score         Int?
+  feedback      String?
+  status        AssignmentStatus @default(PENDING)
+  submittedAt   DateTime?
+  reviewedAt    DateTime?
+  reviewedBy    String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  intern     Intern     @relation(fields: [internId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, internId])
+  @@index([internId])
+  @@index([assignmentId])
+  @@index([status])
+}
+
+// ------------------------------------------------------------
+// Streaks & Leaderboard
+// ------------------------------------------------------------
+
+model InternStreak {
+  id             String   @id @default(uuid())
+  internId       String   @unique
+  currentStreak  Int      @default(0)
+  longestStreak  Int      @default(0)
+  lastActiveDate DateTime?
+  totalXp        Int      @default(0) // experience points
+  level          Int      @default(1)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  intern Intern @relation(fields: [internId], references: [id], onDelete: Cascade)
+}
+
+model DailyActivity {
+  id        String   @id @default(uuid())
+  internId  String
+  date      DateTime @db.Date
+  xpEarned  Int      @default(0)
+  modules   Int      @default(0) // modules completed that day
+  timeSpent Int      @default(0) // total minutes
+  createdAt DateTime @default(now())
+
+  intern Intern @relation(fields: [internId], references: [id], onDelete: Cascade)
+
+  @@unique([internId, date])
+  @@index([internId])
+  @@index([date])
+}
+
+// ------------------------------------------------------------
+// Live Sessions
+// ------------------------------------------------------------
+
+enum LiveSessionStatus {
+  SCHEDULED
+  LIVE
+  COMPLETED
+  CANCELLED
+}
+
+model LiveSession {
+  id          String            @id @default(uuid())
+  title       String
+  description String?
+  hostName    String
+  meetingUrl  String?
+  scheduledAt DateTime
+  duration    Int?              // minutes
+  status      LiveSessionStatus @default(SCHEDULED)
+  recordingUrl String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  attendees LiveSessionAttendee[]
+
+  @@index([status])
+  @@index([scheduledAt])
+}
+
+model LiveSessionAttendee {
+  id            String   @id @default(uuid())
+  liveSessionId String
+  internId      String
+  joinedAt      DateTime?
+  leftAt        DateTime?
+  attended      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  liveSession LiveSession @relation(fields: [liveSessionId], references: [id], onDelete: Cascade)
+  intern      Intern      @relation(fields: [internId], references: [id], onDelete: Cascade)
+
+  @@unique([liveSessionId, internId])
+  @@index([internId])
+  @@index([liveSessionId])
+}
+
+// ------------------------------------------------------------
+// Help & Support
+// ------------------------------------------------------------
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model SupportTicket {
+  id          String         @id @default(uuid())
+  internId    String
+  subject     String
+  description String
+  category    String         @default("general") // general, technical, academic, other
+  priority    TicketPriority @default(MEDIUM)
+  status      TicketStatus   @default(OPEN)
+  resolvedAt  DateTime?
+  resolvedBy  String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  intern   Intern          @relation(fields: [internId], references: [id], onDelete: Cascade)
+  messages TicketMessage[]
+
+  @@index([internId])
+  @@index([status])
+  @@index([priority])
+}
+
+model TicketMessage {
+  id        String   @id @default(uuid())
+  ticketId  String
+  senderId  String   // userAccountId
+  senderType String  // ADMIN or INTERN
+  message   String
+  createdAt DateTime @default(now())
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+}
