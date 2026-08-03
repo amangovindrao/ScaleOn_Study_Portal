@@ -16,6 +16,9 @@ router.get('/live-sessions', authenticate(), LC.listLiveSessions);
 router.get('/leaderboard', authenticate(), LC.getLeaderboard);
 router.get('/support/my-tickets', authenticate(), requireUserType('INTERN'), LC.listMyTickets);
 router.post('/support/tickets', authenticate(), requireUserType('INTERN'), LC.createTicket);
+router.delete('/support/tickets/:ticketId', authenticate(), requireUserType('INTERN'), LC.deleteTicket);
+router.post('/support/tickets/:ticketId/messages', authenticate(), requireUserType('INTERN'), LC.replyTicket);
+router.patch('/support/tickets/:ticketId/status', authenticate(), requireUserType('INTERN'), LC.updateTicketStatus);
 
 // ── Admin routes ───────────────────────────────────────
 router.get('/phases', authenticate(), requireUserType('ADMIN'), LC.listPhases);

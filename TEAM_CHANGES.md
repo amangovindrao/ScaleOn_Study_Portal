@@ -32,6 +32,46 @@ Added an automated **"My Certifications"** section to the intern Profile page. I
 
 ---
 
+## 📅 Log Entry: Support Portal Enhancement & Ticket Management (2026-08-04)
+
+### 1. What Was Changed
+- **Ticket Deletion**: Added capability for interns to delete their support tickets.
+- **Interactive Thread Messaging**: Interns can send follow-up replies directly in open ticket conversation threads.
+- **Self-Service Status Control**: Interns can toggle ticket status between `RESOLVED` and `OPEN` (re-opening).
+- **Category & Priority Selection**: Ticket creation now accepts `category` (*General, Technical, Academic, Other*) and `priority` (*Low, Medium, High, Urgent*).
+- **Support Metrics Summary**: Added top dashboard cards displaying Total, Active/Pending, and Resolved ticket counts.
+- **Search & Multi-Filtering**: Live keyword search bar and filter controls for Status and Priority.
+- **FAQ Knowledge Base & Mentor Contact**: Built an interactive FAQ accordion tab and direct mentor contact panel.
+- **Optimistic State Management**: Client-side state updates instantly (0ms delay) upon creating, deleting, replying, or closing tickets before background server synchronization finishes.
+
+### 2. Which Files Were Modified
+- **[backend/src/modules/learning/learning.controller.ts](./backend/src/modules/learning/learning.controller.ts)**: Added `deleteTicket`, `replyTicket`, and `updateTicketStatus` handlers.
+- **[backend/src/modules/learning/learning.routes.ts](./backend/src/modules/learning/learning.routes.ts)**: Registered `DELETE`, `POST` message, and `PATCH` status endpoints for intern support tickets.
+- **[frontend/app/intern/support/page.tsx](./frontend/app/intern/support/page.tsx)**: Full Support Hub redesign, thread replies, status toggling, search/filtering, stats header, and FAQ tab.
+
+### 3. Which Other Files/Components Need to be Updated by Teammates
+- **Admin Support Dashboard (Teammates working on Admin portal)**:
+  - If building/updating admin support management screens (e.g. `/admin/support`), consume `category` and `priority` from `SupportTicket` records returned by `LC.adminListTickets`.
+  - Admin replies can be created by inserting records into `TicketMessage` with `senderType: 'ADMIN'`.
+
+### 4. New Dependencies, APIs, Environment Variables, or Database Changes
+- **New API Endpoints**:
+  - `DELETE /api/v1/learning/support/tickets/:ticketId` - Deletes a ticket and cascades to associated messages.
+  - `POST /api/v1/learning/support/tickets/:ticketId/messages` - Body: `{ message: string }`. Appends an intern reply message to the ticket thread.
+  - `PATCH /api/v1/learning/support/tickets/:ticketId/status` - Body: `{ status: 'OPEN' | 'RESOLVED' | 'IN_PROGRESS' }`. Updates ticket status.
+- **Dependencies**: None.
+- **Database Schema**: No migrations required (uses existing Prisma `SupportTicket` and `TicketMessage` models).
+- **Environment Variables**: None.
+
+### 5. Manual Setup or Migration Steps
+- None. Standard server restart automatically loads the new routes.
+
+### 6. Breaking Changes & Important Notes
+- **Breaking Changes**: None.
+- **Important Note**: `TicketMessage` model has `@relation(fields: [ticketId], references: [id], onDelete: Cascade)` in Prisma schema, so deleting a `SupportTicket` cleanly deletes all message history without leaving orphaned records.
+
+---
+
 ## [2026-08-04] — Profile Page UI Revision (Simplified 3-Card Layout)
 
 ### 🔎 What Was Changed
@@ -63,34 +103,6 @@ Revised the intern profile page UI to be simpler, more focused, and internship-s
 - **Sticky save button** — full-width fixed bar on mobile; inline button with icon on desktop
 - **Password visibility toggles** — show/hide each password field individually
 
-### ❌ Fields Removed from UI
-The following fields were removed from the profile form UI (they still exist in the database and backend):
-- Semester
-- Portfolio / Website
-- University (merged into College field)
-- Specialization
-- Current Role
-- Interested Domains
-- Coding Profiles (LeetCode, etc.)
-- AI Projects
-- Achievements
-- Profile Completion bar
-
-> These fields still exist in the `InternProfile` table (from the previous migration). They are simply not shown in the UI. Data previously saved in these fields is preserved.
-
-### 👥 What Teammates Need to Update
-- **Nothing** — frontend-only change. Pull and refresh your browser.
-- If you are building the **admin intern detail view**, note that the UI-removed fields still exist in the DB and are returned by `GET /api/v1/profiles/:internId`. You can still display them on the admin side.
-
-### ⚠️ Breaking Changes
-None.
-
-### 🌐 API Changes
-None. The `PATCH /api/v1/profiles/me` and `GET /api/v1/profiles/me` endpoints are unchanged.
-
-### 🔐 Environment Variables
-None.
-
 ---
 
 ## [2026-08-03] — Profile Page Redesign + Database Schema Extension
@@ -98,135 +110,12 @@ None.
 ### 🔎 What Was Changed
 A complete redesign of the intern profile page with new UI sections and extended backend data model to support richer profile information useful for a recruiter-facing intern portal.
 
-### 📝 Files Modified
-
-#### Frontend
-| File | Change |
-|---|---|
-| `frontend/app/intern/profile/page.tsx` | **Full rewrite** — 9 new sections, skill chips, domain multi-select, coding profiles, completion bar, sticky save button, password visibility toggles |
-
-#### Backend
-| File | Change |
-|---|---|
-| `backend/src/modules/profile/profile.controller.ts` | Extended `updateProfileSchema` Zod object to accept 6 new fields: `specialization`, `currentRole`, `interestedDomains`, `codingProfiles`, `aiProjects`, `achievements` |
-| `backend/prisma/schema.prisma` | Added 6 new columns to `InternProfile` model (see Database Changes below) |
-| `backend/prisma/migrations/20260803182244_add_extended_profile_fields/migration.sql` | **New migration file** — adds columns to `InternProfile` table |
-
----
-
-### 👥 What Teammates Need to Update
-
-#### All teammates — **Run migration first before starting backend**
-```bash
-cd backend
-npx prisma migrate deploy   # applies the new migration
-npx prisma generate         # regenerates Prisma Client
-```
-
-#### Backend teammates
-- If you are adding/modifying the **admin intern detail view**, the `InternProfile` object now has 6 additional fields. Update your admin panel read views accordingly:
-  - `specialization` (String)
-  - `currentRole` (String)
-  - `interestedDomains` (String[])
-  - `codingProfiles` (Json: `{ leetcode, codeforces, hackerrank, codechef }`)
-  - `aiProjects` (String — freeform text)
-  - `achievements` (String — freeform text)
-- The `getProfileByInternId` admin endpoint already returns the full `InternProfile` and will now include the new fields automatically.
-- The `updateProfileByInternId` admin endpoint also uses the same `updateProfileSchema`, so it accepts the new fields too.
-
-#### Frontend teammates
-- If you are building the **admin intern detail page** (`/admin/interns/[id]`), update it to display the new profile fields.
-- The `AuthUser.intern.profile` type in `frontend/app/lib/auth-context.tsx` is typed as `Record<string, unknown> | null`. If you need strongly typed access to profile fields anywhere, consider extending this interface.
-
----
-
-### 🗄️ Database Changes
-
-**Migration:** `20260803182244_add_extended_profile_fields`
-
-**Table:** `InternProfile`
-
-| Column | Type | Default | Notes |
-|---|---|---|---|
-| `specialization` | `TEXT` | `NULL` | e.g., "Machine Learning" |
-| `currentRole` | `TEXT` | `NULL` | e.g., "AI Intern at ScaleOn" |
-| `interestedDomains` | `TEXT[]` | `{}` | Array of domain strings |
-| `codingProfiles` | `JSONB` | `NULL` | `{ leetcode, codeforces, hackerrank, codechef }` |
-| `aiProjects` | `TEXT` | `NULL` | Freeform markdown-style text |
-| `achievements` | `TEXT` | `NULL` | Freeform text |
-
-**SQL (for reference):**
-```sql
-ALTER TABLE "InternProfile"
-  ADD COLUMN "achievements" TEXT,
-  ADD COLUMN "aiProjects" TEXT,
-  ADD COLUMN "codingProfiles" JSONB,
-  ADD COLUMN "currentRole" TEXT,
-  ADD COLUMN "interestedDomains" TEXT[] DEFAULT ARRAY[]::TEXT[],
-  ADD COLUMN "specialization" TEXT;
-```
-
-> ✅ This migration is **non-destructive** (additive only). Existing rows are unaffected.
-
----
-
-### ⚙️ New Dependencies
-None. All new UI components (skill chips, multi-select dropdown) are built with vanilla React + Lucide icons already in the project.
-
-### 🌐 API Changes
-- `PATCH /api/v1/profiles/me` — now accepts the 6 new fields in the request body (all optional, fully backward compatible)
-- `GET /api/v1/profiles/me` — response now includes the 6 new fields (null by default for existing profiles)
-
-### 🔐 Environment Variables
-No new environment variables required.
-
-### ⚠️ Breaking Changes
-None. All changes are strictly additive and backward compatible.
-
-### 🧑‍💻 Manual Setup / Migration Steps
-```bash
-# Required for every teammate after pulling this change:
-cd backend
-npx prisma migrate deploy   # or: npx prisma migrate dev (if on dev branch)
-npx prisma generate
-npm run dev
-
-cd ../frontend
-npm run dev
-```
-
 ---
 
 ## [2026-08-03] — Prisma Connection Pool Fix + Graceful Shutdown
 
 ### 🔎 What Was Changed
 Fixed a Prisma connection pool timeout error (`Timed out fetching a new connection from the connection pool`) that occurred when logging in. The root cause was orphaned Node processes from hot-reloads not releasing database connections, and Proton Drive's `ProTUN` virtual network adapter intercepting SSL connections on one developer machine.
-
-### 📝 Files Modified
-
-| File | Change |
-|---|---|
-| `backend/.env` | Ensured `connect_timeout=30` is set in `DATABASE_URL` (no extra params that interfere with PgBouncer) |
-| `backend/src/server.ts` | Added `SIGINT` and `SIGUSR2` signal handlers so Prisma properly disconnects when ts-node-dev hot-reloads or the server is stopped with Ctrl+C |
-
-### 📋 Details of `server.ts` Change
-```typescript
-// Before: only handled SIGTERM
-process.on('SIGTERM', () => { ... });
-
-// After: shared shutdown handler covers all signals
-const shutdown = () => { server.close(() => { prisma.$disconnect(); }); };
-process.on('SIGTERM', shutdown);
-process.on('SIGINT', shutdown);   // ← new: Ctrl+C
-process.on('SIGUSR2', shutdown);  // ← new: ts-node-dev restart signal
-```
-
-### 👥 What Teammates Need to Update
-- **Nothing** — pull the changes and restart your backend. The fix is transparent.
-- If you are on a machine with **ProtonDrive / ProtonMail / ProtonVPN** installed, the `ProTUN` virtual network adapter will intercept database SSL connections and cause `ECONNRESET` errors. Disconnect or uninstall Proton when running the backend locally, or configure split tunneling to exclude port 5432.
-
-### ⚠️ Breaking Changes
-None.
 
 ---
 
@@ -237,55 +126,6 @@ None.
 - Added remote `origin` pointing to `https://github.com/amangovindrao/ScaleOn_Study_Portal`
 - Force-checked out `main` branch from remote (overwrote local files with repo versions)
 
-### 📝 Files Modified
-All files — initial pull from the repository.
-
-### ⚙️ Manual Setup Steps (for new developers)
-```bash
-# 1. Clone the repository
-git clone https://github.com/amangovindrao/ScaleOn_Study_Portal.git
-cd ScaleOn_Study_Portal
-
-# 2. Install dependencies
-cd backend && npm install
-cd ../frontend && npm install
-
-# 3. Configure environment
-cp backend/.env.example backend/.env
-# Edit backend/.env and fill in your DATABASE_URL and DIRECT_URL from Neon Console
-
-# 4. Run Prisma migrations and seed
-cd backend
-npx prisma migrate deploy
-npx prisma generate
-npm run db:seed              # creates super admin + default roles/batches
-npm run db:seed-test         # (optional) adds test intern accounts
-
-# 5. Start servers
-npm run dev                  # in backend/
-cd ../frontend && npm run dev
-```
-
-### 🔐 Environment Variables Required
-```env
-# backend/.env
-DATABASE_URL=postgresql://...@ep-xxx-pooler.region.neon.tech/neondb?sslmode=require&pgbouncer=true&connect_timeout=30
-DIRECT_URL=postgresql://...@ep-xxx.region.neon.tech/neondb?sslmode=require&connect_timeout=30
-JWT_ACCESS_SECRET=<random secret>
-JWT_REFRESH_SECRET=<random secret>
-CSRF_SECRET=<random secret>
-```
-See `backend/.env.example` for the full list.
-
-### 🔑 Default Credentials (Development Only)
-| Role | Identifier | Password |
-|---|---|---|
-| Super Admin | `admin@scaleon.io` | `Admin@ScaleOn2026!` |
-| Test Intern | `SOINT260001` – `SOINT260007` | `Test@1234` |
-
-> ⚠️ **Change these in production!**
-
 ---
 
-*Last updated: 2026-08-03 by Antigravity (AI Coding Assistant)*
-*For questions about any change, check the relevant file's git history or ask the developer who made the change.*
+*Last updated: 2026-08-04 by Antigravity (AI Coding Assistant)*
