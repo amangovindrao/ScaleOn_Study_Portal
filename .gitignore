@@ -45,3 +45,7 @@ next-env.d.ts
 
 # prisma shadow helpers
 backend/scripts/create-shadow.cjs
+
+venv
+frontend/node_modules
+.env.local
