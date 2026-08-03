@@ -21,6 +21,18 @@ const updateProfileSchema = z.object({
   semester: z.string().optional(),
   expectedGraduation: z.string().datetime().optional().nullable(),
   phone: z.string().optional(),
+  // Extended profile fields
+  specialization: z.string().max(200).optional().nullable(),
+  currentRole: z.string().max(200).optional().nullable(),
+  interestedDomains: z.array(z.string()).optional(),
+  codingProfiles: z.object({
+    leetcode: z.string().optional(),
+    codeforces: z.string().optional(),
+    hackerrank: z.string().optional(),
+    codechef: z.string().optional(),
+  }).optional(),
+  aiProjects: z.string().max(5000).optional().nullable(),
+  achievements: z.string().max(5000).optional().nullable(),
 });
 
 /** Intern: view own profile. */

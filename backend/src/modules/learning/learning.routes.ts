@@ -6,7 +6,9 @@ const router = Router();
 
 // ── Intern routes ──────────────────────────────────────
 router.get('/my-learning', authenticate(), requireUserType('INTERN'), LC.getMyLearning);
+router.get('/certificates', authenticate(), requireUserType('INTERN'), LC.getMyCertificates);
 router.post('/modules/:moduleId/complete', authenticate(), requireUserType('INTERN'), LC.completeModule);
+
 router.get('/my-streak', authenticate(), requireUserType('INTERN'), LC.getMyStreak);
 router.get('/assignments', authenticate(), requireUserType('INTERN'), LC.listAssignments);
 router.post('/assignments/:assignmentId/submit', authenticate(), requireUserType('INTERN'), LC.submitAssignment);

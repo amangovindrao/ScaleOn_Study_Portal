@@ -154,6 +154,42 @@ export const completeModule = asyncHandler(async (req: Request, res: Response) =
       : 0;
     await tx.intern.update({ where: { id: intern.id }, data: { overallProgress } });
 
+    // Check Phase Completion & Auto-issue Certificate
+    const targetModule = await tx.learningModule.findUnique({
+      where: { id: learningModule.id },
+      select: { phaseId: true, phase: { select: { name: true } } },
+    });
+
+    if (targetModule) {
+      const [phaseModulesCount, completedPhaseModulesCount] = await Promise.all([
+        tx.learningModule.count({ where: { phaseId: targetModule.phaseId, status: 'PUBLISHED' } }),
+        tx.moduleProgress.count({
+          where: {
+            internId: intern.id,
+            status: 'COMPLETED',
+            module: { phaseId: targetModule.phaseId, status: 'PUBLISHED' },
+          },
+        }),
+      ]);
+
+      if (phaseModulesCount > 0 && completedPhaseModulesCount >= phaseModulesCount) {
+        const internRecord = await tx.intern.findUnique({ where: { id: intern.id }, select: { scaleonId: true } });
+        const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        const code = `CERT-${internRecord?.scaleonId || 'SOINT'}-PH${targetModule.phaseId.slice(0, 4).toUpperCase()}-${dateStr}`;
+
+        await tx.certificate.upsert({
+          where: { internId_phaseId: { internId: intern.id, phaseId: targetModule.phaseId } },
+          create: {
+            internId: intern.id,
+            phaseId: targetModule.phaseId,
+            phaseName: targetModule.phase.name,
+            certificateCode: code,
+          },
+          update: {},
+        });
+      }
+    }
+
     return { alreadyCompleted: false, awardedXp: learningModule.points };
   });
 
@@ -164,6 +200,26 @@ export const completeModule = asyncHandler(async (req: Request, res: Response) =
       : `Module completed! +${result.awardedXp} XP`,
   });
 });
+
+export const getMyCertificates = asyncHandler(async (req: Request, res: Response) => {
+  const userAccountId = req.authUser!.userAccountId;
+  const intern = await prisma.intern.findFirst({
+    where: { userAccountId },
+    select: { id: true, fullName: true, scaleonId: true },
+  });
+  if (!intern) throw ApiError.notFound('Intern not found');
+
+  const certificates = await prisma.certificate.findMany({
+    where: { internId: intern.id },
+    orderBy: { issuedAt: 'desc' },
+    include: {
+      phase: { select: { name: true, description: true } },
+    },
+  });
+
+  sendSuccess(res, certificates);
+});
+
 
 // ── Leaderboard ──────────────────────────────────────────────────
 

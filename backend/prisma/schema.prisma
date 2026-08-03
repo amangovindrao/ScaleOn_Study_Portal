@@ -209,6 +209,8 @@ model Intern {
   dailyActivity  DailyActivity[]
   liveAttendance LiveSessionAttendee[]
   supportTickets SupportTicket[]
+  certificates   Certificate[]
+
 
   @@index([internshipRoleId])
   @@index([batchId])
@@ -232,6 +234,13 @@ model InternProfile {
   branch             String?
   semester           String?
   expectedGraduation DateTime?
+  // Extended profile fields
+  specialization     String?
+  currentRole        String?
+  interestedDomains  String[]  @default([])
+  codingProfiles     Json?     // { leetcode, codeforces, hackerrank, codechef }
+  aiProjects         String?
+  achievements       String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -473,7 +482,9 @@ model LearningPhase {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  modules LearningModule[]
+  modules      LearningModule[]
+  certificates Certificate[]
+
 
   @@index([status])
 }
@@ -696,14 +707,36 @@ model SupportTicket {
 }
 
 model TicketMessage {
-  id        String   @id @default(uuid())
-  ticketId  String
-  senderId  String   // userAccountId
-  senderType String  // ADMIN or INTERN
-  message   String
-  createdAt DateTime @default(now())
+  id         String   @id @default(uuid())
+  ticketId   String
+  senderId   String   // userAccountId
+  senderType String   // ADMIN or INTERN
+  message    String
+  createdAt  DateTime @default(now())
 
   ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
   @@index([ticketId])
+}
+
+// ------------------------------------------------------------
+// Certificates (auto-issued on phase completion)
+// ------------------------------------------------------------
+
+model Certificate {
+  id              String   @id @default(uuid())
+  internId        String
+  phaseId         String
+  certificateCode String   @unique // e.g. "CERT-SOINT260001-PH1-20260803"
+  phaseName       String           // snapshot of phase name at time of issue
+  issuedAt        DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  intern Intern        @relation(fields: [internId], references: [id], onDelete: Cascade)
+  phase  LearningPhase @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+
+  @@unique([internId, phaseId])
+  @@index([internId])
+  @@index([phaseId])
+  @@index([issuedAt])
 }
