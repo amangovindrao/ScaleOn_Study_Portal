@@ -15,10 +15,15 @@ export default function AdminDashboardPage() {
     "/interns?page=1&pageSize=5&sortBy=createdAt&sortOrder=desc"
   );
   const { data: batches } = useFetch<{ status: string }[]>("/catalog/batches");
+  const { data: analytics } = useFetch<{ newInternsThisWeek: number; averageCompletion: number }>(
+    "/interns/analytics/summary"
+  );
 
   const totalInterns = pagination?.total ?? 0;
   const interns = recentInterns ?? [];
   const activeBatches = batches?.filter((b) => b.status === "ACTIVE").length ?? 0;
+  const thisWeek = analytics?.newInternsThisWeek ?? 0;
+  const completion = analytics?.averageCompletion ?? 0;
   const displayName = user?.admin?.fullName ?? "Admin";
 
   return (
@@ -33,8 +38,8 @@ export default function AdminDashboardPage() {
         {[
           { label: "Total Interns", value: totalInterns, color: "text-blue-600" },
           { label: "Active Batches", value: activeBatches, color: "text-emerald-600" },
-          { label: "This Week", value: "—", color: "text-amber-600" },
-          { label: "Completion", value: "—", color: "text-purple-600" },
+          { label: "This Week", value: `+${thisWeek}`, color: "text-amber-600" },
+          { label: "Completion", value: `${completion}%`, color: "text-purple-600" },
         ].map((s) => (
           <div key={s.label} className="bg-white border border-slate-200 rounded-xl p-4">
             <p className="text-slate-500 text-xs font-medium uppercase tracking-wider">{s.label}</p>

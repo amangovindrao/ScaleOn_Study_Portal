@@ -435,3 +435,35 @@ export async function extendInternship(
   await logAudit({ actorId, actorType: 'ADMIN', action: 'intern.extended', entityType: 'Intern', entityId: internId, before: { endDate: intern.endDate } as never, after: { endDate: newEndDate, reason } as never, ipAddress });
   return updated;
 }
+
+// ---------------------------------------------------------------------------
+// Analytics Summary
+// ---------------------------------------------------------------------------
+
+export async function getAnalyticsSummary() {
+  const lastWeek = new Date();
+  lastWeek.setDate(lastWeek.getDate() - 7);
+
+  const [newInternsThisWeek, activeInternsCount, progressSumResult] = await Promise.all([
+    prisma.intern.count({
+      where: {
+        createdAt: { gte: lastWeek }
+      }
+    }),
+    prisma.intern.count({
+      where: { status: 'ACTIVE' }
+    }),
+    prisma.intern.aggregate({
+      where: { status: 'ACTIVE' },
+      _sum: { overallProgress: true }
+    })
+  ]);
+
+  const totalProgress = progressSumResult._sum.overallProgress || 0;
+  const averageCompletion = activeInternsCount > 0 ? Math.round(totalProgress / activeInternsCount) : 0;
+
+  return {
+    newInternsThisWeek,
+    averageCompletion
+  };
+}
