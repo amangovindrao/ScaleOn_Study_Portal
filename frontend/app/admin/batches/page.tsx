@@ -44,11 +44,11 @@ export default function BatchesPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Batches</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Batches</h1>
           <p className="text-slate-500 text-sm mt-0.5">{(batches as Batch[] | null)?.length ?? 0} batches total</p>
         </div>
         <button onClick={() => setCreateOpen(true)}
-          className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-slate-900 font-semibold rounded-xl px-4 py-2.5 text-sm transition">
+          className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl px-4 py-2.5 text-sm transition shadow-sm">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
@@ -61,7 +61,7 @@ export default function BatchesPage() {
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {(batches as Batch[] | null)?.map((batch) => (
-            <div key={batch.id} className="bg-slate-900/60 border border-white/8 rounded-2xl p-5 space-y-3">
+            <div key={batch.id} className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-3 shadow-sm hover:shadow-md transition">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-slate-900 font-semibold">{batch.name}</p>
@@ -72,19 +72,19 @@ export default function BatchesPage() {
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div>
                   <p className="text-slate-500">Start</p>
-                  <p className="text-white">{batch.startDate ? new Date(batch.startDate).toLocaleDateString() : "—"}</p>
+                  <p className="text-slate-900 font-medium">{batch.startDate ? new Date(batch.startDate).toLocaleDateString() : "—"}</p>
                 </div>
                 <div>
                   <p className="text-slate-500">End</p>
-                  <p className="text-white">{batch.endDate ? new Date(batch.endDate).toLocaleDateString() : "—"}</p>
+                  <p className="text-slate-900 font-medium">{batch.endDate ? new Date(batch.endDate).toLocaleDateString() : "—"}</p>
                 </div>
                 <div>
                   <p className="text-slate-500">Interns</p>
-                  <p className="text-white">{batch._count?.interns ?? 0}</p>
+                  <p className="text-slate-900 font-medium">{batch._count?.interns ?? 0}</p>
                 </div>
                 <div>
                   <p className="text-slate-500">Capacity</p>
-                  <p className="text-white">{batch.capacity ?? "∞"}</p>
+                  <p className="text-slate-900 font-medium">{batch.capacity ?? "∞"}</p>
                 </div>
               </div>
             </div>

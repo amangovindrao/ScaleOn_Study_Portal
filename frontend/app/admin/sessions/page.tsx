@@ -46,7 +46,7 @@ export default function SessionsPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Sessions</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Sessions</h1>
           <p className="text-slate-500 text-sm mt-0.5">{pagination.total} sessions</p>
         </div>
         <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -56,7 +56,7 @@ export default function SessionsPage() {
         </label>
       </div>
 
-      <div className="bg-slate-900/60 border border-white/8 rounded-2xl overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
         {loading ? (
           <div className="flex justify-center py-12"><Spinner size="lg" /></div>
         ) : sessions.length === 0 ? (
@@ -66,7 +66,7 @@ export default function SessionsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-white/8 text-slate-500 text-xs uppercase tracking-wider">
+                  <tr className="border-b border-slate-100 text-slate-400 text-xs uppercase tracking-wider">
                     <th className="text-left px-5 py-3">User</th>
                     <th className="text-left px-4 py-3 hidden md:table-cell">IP</th>
                     <th className="text-left px-4 py-3 hidden lg:table-cell">Browser / OS</th>
@@ -76,9 +76,9 @@ export default function SessionsPage() {
                     <th className="text-right px-5 py-3">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-slate-100">
                   {sessions.map((s) => (
-                    <tr key={s.id} className="hover:bg-white/2 transition">
+                    <tr key={s.id} className="hover:bg-slate-50 transition">
                       <td className="px-5 py-3.5">
                         <p className="text-slate-900 text-sm">{s.userAccount.username ?? s.userAccount.email}</p>
                         <p className="text-slate-500 text-xs">{s.userAccount.userType}</p>

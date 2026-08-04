@@ -43,7 +43,7 @@ export default function RolesPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-white">Roles & Permissions</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Roles & Permissions</h1>
         <p className="text-slate-500 text-sm mt-0.5">Database-driven RBAC — click a role to edit its permissions.</p>
       </div>
 
@@ -56,8 +56,8 @@ export default function RolesPage() {
             {(roles as Role[] | null)?.map((role) => (
               <div key={role.id}
                 onClick={() => openRole(role)}
-                className={`bg-slate-900/60 border rounded-2xl p-5 cursor-pointer transition
-                  ${selected?.id === role.id ? "border-purple-500/50 bg-purple-500/5" : "border-white/8 hover:border-white/15"}`}>
+                className={`bg-white border rounded-2xl p-5 cursor-pointer transition shadow-sm
+                  ${selected?.id === role.id ? "border-blue-500 ring-2 ring-blue-500/20 bg-blue-50/30" : "border-slate-200 hover:border-slate-300"}`}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <p className="text-slate-900 font-semibold">{role.name}</p>
@@ -77,11 +77,11 @@ export default function RolesPage() {
 
           {/* Permission editor */}
           {selected ? (
-            <div className="bg-slate-900/60 border border-white/8 rounded-2xl p-5 space-y-4 h-fit sticky top-0">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 h-fit sticky top-20 shadow-sm">
               <div className="flex items-center justify-between">
                 <h2 className="text-slate-900 font-semibold">{selected.name} — Permissions</h2>
                 <button onClick={handleSavePermissions} disabled={saving}
-                  className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-slate-900 text-sm font-semibold rounded-xl px-4 py-2 transition">
+                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-semibold rounded-xl px-4 py-2 transition">
                   {saving ? "Saving…" : "Save"}
                 </button>
               </div>

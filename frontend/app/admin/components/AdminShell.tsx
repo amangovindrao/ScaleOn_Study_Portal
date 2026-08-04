@@ -5,13 +5,14 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/app/lib/auth-context";
 import { NavBar } from "@/app/components/ui/navbar";
-import { LayoutDashboard, Users, Package, Shield, Monitor, Trophy, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, Package, Shield, Monitor, Trophy, FileText, LogOut } from "lucide-react";
 
 const NAV_ITEMS = [
   { name: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
   { name: "Interns", url: "/admin/interns", icon: Users },
   { name: "Intern of Week", url: "/admin/intern-of-week", icon: Trophy },
   { name: "Batches", url: "/admin/batches", icon: Package },
+  { name: "Assignments", url: "/admin/assignments", icon: FileText },
   { name: "Roles", url: "/admin/roles", icon: Shield },
   { name: "Sessions", url: "/admin/sessions", icon: Monitor },
 ];

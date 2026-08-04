@@ -7,6 +7,67 @@
 
 ---
 
+## [2026-08-04] — Admin Assignments Module (`feature/admin-assignments`)
+
+### 🔎 What Was Changed
+Implemented the new `/admin/assignments` management area inside the Admin portal. Admins can view, search, and filter assignments (by module link and due date range), create new assignments, edit existing assignments, delete assignments, and review intern submissions with score, status decision, and written feedback.
+
+All data access is encapsulated inside `useAssignmentsData.ts` and `useAssignmentDetails()` backed by typed dummy data matching real Prisma models (`Assignment` & `AssignmentSubmission`) to allow 1-file API swap when backend controllers are ready.
+
+### 📝 Files Modified
+
+#### Frontend
+| File | Change |
+|---|---|
+| [`frontend/app/admin/assignments/page.tsx`](./frontend/app/admin/assignments/page.tsx) | **NEW** — Assignment overview, search, filters, analytics cards, list grid, create/edit modal, delete confirm |
+| [`frontend/app/admin/assignments/[assignmentId]/page.tsx`](./frontend/app/admin/assignments/[assignmentId]/page.tsx) | **NEW** — Single assignment submission detail page & review flow |
+| [`frontend/app/admin/assignments/types.ts`](./frontend/app/admin/assignments/types.ts) | **NEW** — TypeScript interfaces matching Prisma `Assignment` & `AssignmentSubmission` models |
+| [`frontend/app/admin/assignments/mock/*`](./frontend/app/admin/assignments/mock/) | **NEW** — Mock assignments, submissions, modules, and in-memory store |
+| [`frontend/app/admin/assignments/hooks/useAssignmentsData.ts`](./frontend/app/admin/assignments/hooks/useAssignmentsData.ts) | **NEW** — Data access hooks exposing CRUD and review methods |
+| [`frontend/app/admin/assignments/components/*`](./frontend/app/admin/assignments/components/) | **NEW** — `AssignmentTable`, `AssignmentFormModal`, `SubmissionRow`, `ReviewModal`, `StatusFilter`, `SearchBar`, `EmptyState`, `LoadingSkeleton` |
+| [`frontend/app/admin/components/AdminShell.tsx`](./frontend/app/admin/components/AdminShell.tsx) | Added `"Assignments"` (`/admin/assignments`) to `NAV_ITEMS` array with `FileText` icon |
+
+### 🛠️ APIs Used (Mock Function -> Future Endpoint Mapping)
+
+| Mock Function | Future Backend API Endpoint | HTTP Method | Purpose |
+|---|---|---|---|
+| `mockFetchAssignments(filters)` | `/api/v1/admin/assignments` | GET | List assignments with search/filters & submission stats |
+| `mockFetchAssignmentById(id)` | `/api/v1/admin/assignments/:id` | GET | Fetch single assignment details & stats |
+| `mockCreateAssignment(input)` | `/api/v1/admin/assignments` | POST | Create new assignment |
+| `mockUpdateAssignment(id, input)` | `/api/v1/admin/assignments/:id` | PATCH | Update assignment details |
+| `mockDeleteAssignment(id)` | `/api/v1/admin/assignments/:id` | DELETE | Delete assignment & cascade remove submissions |
+| `mockFetchSubmissionsForAssignment(id)` | `/api/v1/admin/assignments/:id/submissions` | GET | List submissions for assignment |
+| `mockReviewSubmission(subId, input)` | `/api/v1/admin/assignments/submissions/:subId` | PATCH | Grade submission (score, feedback, status) |
+| `mockFetchLearningModules()` | `/api/v1/catalog/modules` | GET | List available learning modules for dropdown selection |
+
+### 📦 Dependencies Added
+- None. Uses existing `lucide-react`, Next.js App Router, Tailwind CSS 4, and UI primitives (`app/components/ui/*`).
+
+### 🔑 Environment Variables
+- None.
+
+### 🗄️ Database Changes
+- None required. Uses existing Prisma schema models: `Assignment` and `AssignmentSubmission`.
+
+### 🚨 Backend Changes Required
+> [!IMPORTANT]
+> **No backend routes or controller exist for `Assignment` / `AssignmentSubmission` yet.**
+> - Need to create `backend/src/modules/assignments/` (service, controller, routes).
+> - Need to seed RBAC permissions for assignment management (e.g. `assignment.manage`, `assignment.review`) and bind to Admin roles.
+
+### 👥 Changes Required by Other Teams
+- **Backend Team**: Implement `backend/src/modules/assignments` routes matching the endpoints in the table above.
+- **Intern Portal Team**: Point intern assignment submission form to the same `AssignmentSubmission` model.
+
+### ⚙️ Manual Setup or Migration Steps
+- None.
+
+### 💥 Breaking Changes & Notes
+- **Breaking Changes**: None.
+- **Shared File Edit**: Added `"Assignments"` to `NAV_ITEMS` in `AdminShell.tsx`.
+
+---
+
 ## [2026-08-04] — Intern of the Week Admin Portal & Backend Integration (Aakif - feature/admin-intern-of-week)
 
 ### 🔎 What Was Changed

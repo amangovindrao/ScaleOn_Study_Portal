@@ -120,11 +120,11 @@ export default function InternsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Intern Management</h1>
-          <p className="text-slate-400 text-sm mt-1">{pagination.total} registered interns</p>
+          <h1 className="text-2xl font-bold text-slate-900">Intern Management</h1>
+          <p className="text-slate-500 text-sm mt-1">{pagination.total} registered interns</p>
         </div>
         <button onClick={() => setCreateOpen(true)}
-          className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-slate-900 font-semibold rounded-xl px-5 py-2.5 text-sm transition-all shadow-sm">
+          className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl px-5 py-2.5 text-sm transition-all shadow-sm">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
           Add Interns
         </button>
@@ -136,7 +136,7 @@ export default function InternsPage() {
           <form onSubmit={(e) => { e.preventDefault(); setSearch(searchInput); setPage(1); }} className="flex gap-2 flex-1">
             <input type="text" placeholder="Search name, email, ID…" value={searchInput} onChange={(e) => setSearchInput(e.target.value)}
               className="flex-1 bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-400 transition-all" />
-            <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-slate-900 rounded-xl px-4 py-2.5 text-sm transition-all font-medium">Search</button>
+            <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-4 py-2.5 text-sm transition-all font-medium">Search</button>
           </form>
           <div className="flex gap-2 flex-wrap">
             <select value={roleFilter} onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
@@ -226,7 +226,7 @@ export default function InternsPage() {
               ))}
             </div>
             {createError && <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-red-400 text-xs whitespace-pre-wrap">{createError}</div>}
-            <button onClick={closeModal} className="w-full bg-blue-600 hover:bg-blue-700 text-slate-900 font-semibold rounded-xl py-3 text-sm transition-all">Done</button>
+            <button onClick={closeModal} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl py-3 text-sm transition-all">Done</button>
           </div>
         ) : (
           <div className="space-y-5">
@@ -249,7 +249,7 @@ export default function InternsPage() {
                 </div>
                 <div className="flex gap-3 pt-2">
                   <button type="button" onClick={closeModal} className="flex-1 border border-slate-200 text-slate-500 rounded-xl py-3 text-sm hover:bg-slate-50 transition-all">Cancel</button>
-                  <button type="submit" disabled={createLoading} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-slate-900 font-semibold rounded-xl py-3 text-sm transition-all">{createLoading?"Creating…":"Create Intern"}</button>
+                  <button type="submit" disabled={createLoading} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold rounded-xl py-3 text-sm transition-all">{createLoading?"Creating…":"Create Intern"}</button>
                 </div>
               </form>
             ) : (
@@ -271,7 +271,7 @@ export default function InternsPage() {
                 <button type="button" onClick={addBulkRow} className="text-xs text-blue-600 hover:text-blue-700 transition font-medium">+ Add another row</button>
                 <div className="flex gap-3 pt-2">
                   <button type="button" onClick={closeModal} className="flex-1 border border-slate-200 text-slate-500 rounded-xl py-3 text-sm hover:bg-slate-50 transition-all">Cancel</button>
-                  <button type="submit" disabled={createLoading} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-slate-900 font-semibold rounded-xl py-3 text-sm transition-all">{createLoading?"Creating…":`Create ${bulkRows.filter(r=>r.fullName&&r.email&&r.internId&&r.internshipRoleId).length} Intern(s)`}</button>
+                  <button type="submit" disabled={createLoading} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold rounded-xl py-3 text-sm transition-all">{createLoading?"Creating…":`Create ${bulkRows.filter(r=>r.fullName&&r.email&&r.internId&&r.internshipRoleId).length} Intern(s)`}</button>
                 </div>
               </form>
             )}
