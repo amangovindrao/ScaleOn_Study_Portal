@@ -53,23 +53,23 @@ export default function InternLoginPage() {
               <div>
                 <label htmlFor="email" className="block text-sm font-semibold text-slate-800 mb-2">Intern ID or Email</label>
                 <input id="email" type="text" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)}
-                  placeholder="SOINT260001 or you@email.com"
+                  placeholder="SOINT260001 or you@email.com" suppressHydrationWarning
                   className="w-full border border-slate-200 bg-slate-50/50 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 focus:bg-white transition-all" />
               </div>
               <div>
                 <label htmlFor="password" className="block text-sm font-semibold text-slate-800 mb-2">Password</label>
                 <input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
+                  placeholder="Enter your password" suppressHydrationWarning
                   className="w-full border border-slate-200 bg-slate-50/50 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 focus:bg-white transition-all" />
               </div>
               <div className="flex items-center justify-between">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="w-4 h-4 rounded border-slate-300 accent-blue-600" />
+                  <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} suppressHydrationWarning className="w-4 h-4 rounded border-slate-300 accent-blue-600" />
                   <span className="text-sm text-slate-600">Remember me</span>
                 </label>
                 <Link href="/forgot-password" className="text-sm text-blue-600 hover:text-blue-700 font-medium">Forgot password?</Link>
               </div>
-              <button type="submit" disabled={loading}
+              <button type="submit" disabled={loading} suppressHydrationWarning
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold rounded-xl py-3 text-sm transition-all shadow-md shadow-blue-600/20 hover:shadow-lg hover:shadow-blue-600/30">
                 {loading ? 'Signing in…' : 'Sign in'}
               </button>

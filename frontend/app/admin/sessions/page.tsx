@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { api } from "@/app/lib/api";
 import { Spinner } from "@/app/components/ui/spinner";
 import { Badge } from "@/app/components/ui/badge";
+import { Activity, ShieldCheck, RefreshCw } from "lucide-react";
 
 interface Session {
   id: string; ipAddress: string | null; browser: string | null;
@@ -18,22 +19,33 @@ export default function SessionsPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [pagination, setPagination] = useState<Pagination>({ page: 1, pageSize: 20, total: 0, totalPages: 0 });
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
   const [activeOnly, setActiveOnly] = useState(true);
   const [terminating, setTerminating] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const params = new URLSearchParams({ page: String(page), pageSize: "20", activeOnly: String(activeOnly) });
-    const res = await api.get<Session[]>(`/sessions?${params}`);
-    if (res.success) {
-      setSessions((res.data as Session[]) ?? []);
-      setPagination(res.pagination ?? { page, pageSize: 20, total: 0, totalPages: 0 });
+  const load = useCallback(async (isManualRefresh = false) => {
+    if (isManualRefresh) setRefreshing(true);
+    else setLoading(true);
+
+    try {
+      const params = new URLSearchParams({ page: String(page), pageSize: "20", activeOnly: String(activeOnly) });
+      const res = await api.get<Session[]>(`/sessions?${params}`);
+      if (res.success) {
+        setSessions((res.data as Session[]) ?? []);
+        setPagination(res.pagination ?? { page, pageSize: 20, total: 0, totalPages: 0 });
+      }
+    } catch (err) {
+      console.error("Failed to load sessions:", err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-    setLoading(false);
   }, [page, activeOnly]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   async function terminate(id: string) {
     setTerminating(id);
@@ -44,23 +56,75 @@ export default function SessionsPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Sessions</h1>
-          <p className="text-slate-500 text-sm mt-0.5">{pagination.total} sessions</p>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-slate-900">Sessions</h1>
+            <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              Live Data
+            </span>
+          </div>
+          <p className="text-slate-500 text-sm mt-0.5">
+            {pagination.total} {activeOnly ? "active" : "total"} {pagination.total === 1 ? "session" : "sessions"} fetched from database
+          </p>
         </div>
-        <label className="flex items-center gap-2 cursor-pointer select-none">
-          <input type="checkbox" checked={activeOnly} onChange={(e) => { setActiveOnly(e.target.checked); setPage(1); }}
-            className="accent-purple-500 w-4 h-4" />
-          <span className="text-sm text-slate-600">Active only</span>
-        </label>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => load(true)}
+            disabled={refreshing || loading}
+            title="Refresh Live Data"
+            className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition border border-slate-200 disabled:opacity-50"
+          >
+            <RefreshCw size={16} className={refreshing ? "animate-spin text-purple-600" : ""} />
+          </button>
+
+          <div className="flex items-center gap-1.5 p-1 bg-slate-100 border border-slate-200/80 rounded-xl w-fit">
+            <button
+              onClick={() => { setActiveOnly(true); setPage(1); }}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition ${
+                activeOnly
+                  ? "bg-purple-600 text-white shadow-sm"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+              }`}
+            >
+              <Activity size={14} />
+              <span>Active Sessions</span>
+              {activeOnly && (
+                <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-white/20 text-white">
+                  {pagination.total}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => { setActiveOnly(false); setPage(1); }}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition ${
+                !activeOnly
+                  ? "bg-purple-600 text-white shadow-sm"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+              }`}
+            >
+              <ShieldCheck size={14} />
+              <span>All Sessions</span>
+              {!activeOnly && (
+                <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-white/20 text-white">
+                  {pagination.total}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
         {loading ? (
           <div className="flex justify-center py-12"><Spinner size="lg" /></div>
         ) : sessions.length === 0 ? (
-          <p className="text-slate-500 text-sm text-center py-12">No sessions found.</p>
+          <p className="text-slate-500 text-sm text-center py-12">
+            {activeOnly ? "No active sessions found in database." : "No sessions found in database."}
+          </p>
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -109,13 +173,13 @@ export default function SessionsPage() {
               </table>
             </div>
             {pagination.totalPages > 1 && (
-              <div className="flex items-center justify-between px-5 py-3 border-t border-white/8">
+              <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100">
                 <p className="text-slate-500 text-xs">Page {page} of {pagination.totalPages}</p>
                 <div className="flex gap-2">
                   <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
-                    className="px-3 py-1.5 text-xs bg-white/5 border border-white/10 rounded-lg text-slate-600 hover:text-slate-900 disabled:opacity-30 transition">← Prev</button>
+                    className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-600 hover:text-slate-900 disabled:opacity-30 transition">← Prev</button>
                   <button onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))} disabled={page === pagination.totalPages}
-                    className="px-3 py-1.5 text-xs bg-white/5 border border-white/10 rounded-lg text-slate-600 hover:text-slate-900 disabled:opacity-30 transition">Next →</button>
+                    className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-600 hover:text-slate-900 disabled:opacity-30 transition">Next →</button>
                 </div>
               </div>
             )}

@@ -41,16 +41,16 @@ export default function AdminLoginPage() {
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
               <input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@scaleon.io"
+                placeholder="admin@scaleon.io" suppressHydrationWarning
                 className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition" />
             </div>
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
               <input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="••••••••" suppressHydrationWarning
                 className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition" />
             </div>
-            <button type="submit" disabled={loading}
+            <button type="submit" disabled={loading} suppressHydrationWarning
               className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium rounded-lg py-2.5 text-sm transition">
               {loading ? 'Signing in…' : 'Sign in'}
             </button>
