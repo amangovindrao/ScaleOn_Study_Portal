@@ -1,0 +1,72 @@
+import { Assignment, LearningModuleOption } from "../types";
+
+export const MOCK_LEARNING_MODULES: LearningModuleOption[] = [
+  { id: "mod-101", title: "React Fundamentals & Hooks", phaseName: "Phase 1: Frontend" },
+  { id: "mod-102", title: "State Management with Zustand", phaseName: "Phase 1: Frontend" },
+  { id: "mod-201", title: "Express REST API Architecture", phaseName: "Phase 2: Backend" },
+  { id: "mod-202", title: "Prisma ORM & PostgreSQL Schema Design", phaseName: "Phase 2: Backend" },
+  { id: "mod-301", title: "AI Agent Orchestration & AGY SDK", phaseName: "Phase 3: AI & Advanced" },
+];
+
+export const INITIAL_MOCK_ASSIGNMENTS: Assignment[] = [
+  {
+    id: "asgn-001",
+    moduleId: "mod-101",
+    title: "Build a Dynamic Interactive Dashboard",
+    description: "Create a full dashboard using Next.js App Router and Tailwind CSS with responsive layout and stateful filter controls.",
+    instructions: "1. Fork the starter repo.\n2. Implement dark mode slate layout matching design tokens.\n3. Ensure form validation on all modal inputs.\n4. Submit GitHub repository URL and live Vercel preview link.",
+    dueDate: "2026-08-15T23:59:59.000Z",
+    maxScore: 100,
+    createdAt: "2026-08-01T10:00:00.000Z",
+    updatedAt: "2026-08-01T10:00:00.000Z",
+    module: MOCK_LEARNING_MODULES[0],
+  },
+  {
+    id: "asgn-002",
+    moduleId: "mod-201",
+    title: "Express JWT Auth & Middleware Pipeline",
+    description: "Design a bulletproof Express.js auth module supporting HTTP-only cookie JWT tokens, rate limiting, and CSRF protection.",
+    instructions: "1. Create modular middleware for authenticate, requireUserType, and rateLimit.\n2. Handle access token expiration with 15-minute TTL.\n3. Submit pull request link with unit test suite passing.",
+    dueDate: "2026-08-10T23:59:59.000Z",
+    maxScore: 100,
+    createdAt: "2026-08-02T14:30:00.000Z",
+    updatedAt: "2026-08-02T14:30:00.000Z",
+    module: MOCK_LEARNING_MODULES[2],
+  },
+  {
+    id: "asgn-003",
+    moduleId: "mod-202",
+    title: "Database Migration & Seed Script Challenge",
+    description: "Write clean Prisma schema models for an e-commerce catalog with seed scripts for 100+ sample products.",
+    instructions: "1. Extend schema.prisma with proper index directives and cascading relations.\n2. Create seed.ts with idempotent upserts.\n3. Provide ER diagram markdown.",
+    dueDate: "2026-08-03T23:59:59.000Z", // Past due (Overdue)
+    maxScore: 50,
+    createdAt: "2026-07-25T09:00:00.000Z",
+    updatedAt: "2026-07-25T09:00:00.000Z",
+    module: MOCK_LEARNING_MODULES[3],
+  },
+  {
+    id: "asgn-004",
+    moduleId: "mod-301",
+    title: "Multi-Agent Workflow Integration",
+    description: "Implement custom agentic subagent workflows using Google Antigravity SDK with clear evaluation metrics.",
+    instructions: "1. Define agent role personas.\n2. Implement fallback recovery handling.\n3. Submit demonstration video link.",
+    dueDate: "2026-08-20T23:59:59.000Z",
+    maxScore: 150,
+    createdAt: "2026-08-03T16:00:00.000Z",
+    updatedAt: "2026-08-03T16:00:00.000Z",
+    module: MOCK_LEARNING_MODULES[4],
+  },
+  {
+    id: "asgn-005",
+    moduleId: null,
+    title: "Independent Capstone Architecture Proposal",
+    description: "Standalone architecture proposal document detailing system design, API contracts, and database schema for final internship project.",
+    instructions: "1. Create comprehensive system design architecture document in markdown.\n2. Include Mermaid sequence and database diagrams.\n3. Outline security audit checklist.",
+    dueDate: "2026-08-30T23:59:59.000Z",
+    maxScore: 200,
+    createdAt: "2026-08-04T08:00:00.000Z",
+    updatedAt: "2026-08-04T08:00:00.000Z",
+    module: null,
+  },
+];
