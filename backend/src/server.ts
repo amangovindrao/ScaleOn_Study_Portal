@@ -82,10 +82,14 @@ const server = app.listen(env.port, () => {
 });
 
 // ── Graceful shutdown ────────────────────────────────────────
-process.on('SIGTERM', () => {
+const shutdown = () => {
   server.close(() => {
     import('@/lib/prisma').then(({ prisma }) => prisma.$disconnect());
   });
-});
+};
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
+process.on('SIGUSR2', shutdown);
 
 export default app;

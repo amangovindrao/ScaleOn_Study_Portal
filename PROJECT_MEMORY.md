@@ -330,6 +330,7 @@ See `API_DOCUMENTATION.md` for full reference.
 - `/intern/live` — Scheduled and live sessions
 - `/intern/assignments` — Assignment list and submissions
 - `/intern/support` — Support ticket creation and history
+- `/intern/dashboard` — Rebuilt: week XP, rank, streak widget, continue course, IOTW spotlight, tips modal
 
 **Pending:**
 - `/admin/settings`
@@ -356,7 +357,7 @@ See `API_DOCUMENTATION.md` for full reference.
 - **SEO**: Title, description, keywords, OpenGraph, robots meta tags
 
 ---
-
+#hello
 # Authentication
 
 **Admin flow:**
@@ -500,6 +501,23 @@ Architecture ready (`Notification` table, `email.service.ts` abstraction). Templ
 ## 2026-06-30 — Prompt 1
 - Summary: Initialized PROJECT_MEMORY.md with full required structure.
 - Files Modified: PROJECT_MEMORY.md (new)
+
+---
+
+## 2026-08-04 — Intern Dashboard UI Overhaul (Yashit's module)
+- Summary: Complete rebuild of `/intern/dashboard` UI. All changes confined to `frontend/app/intern/dashboard/page.tsx`.
+- Features added:
+  - This Week XP stat card (derived from existing `/learning/my-streak` API)
+  - Overall Rank stat card (derived from existing `/learning/leaderboard` API)
+  - Animated number counters on all stat cards
+  - Redesigned streak widget (handles zero state gracefully)
+  - 7-day XP bar chart with real data, loading skeleton, and empty state
+  - Continue Course panel (only shows if intern has learning content; hidden otherwise)
+  - Intern of the Week spotlight (renders when backend endpoint exists, silent when not)
+  - Tips modal — "Boost ↑" on rank card + "How to improve?" in leaderboard header
+  - Mini leaderboard with medal icons, "you" highlight, pinned rank if outside top 5
+- Backend changes needed by teammates: documented in `INTERN_OF_WEEK_CHANGES.md`
+- Files changed: `frontend/app/intern/dashboard/page.tsx` only
 
 ---
 

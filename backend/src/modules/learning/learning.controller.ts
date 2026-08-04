@@ -154,6 +154,42 @@ export const completeModule = asyncHandler(async (req: Request, res: Response) =
       : 0;
     await tx.intern.update({ where: { id: intern.id }, data: { overallProgress } });
 
+    // Check Phase Completion & Auto-issue Certificate
+    const targetModule = await tx.learningModule.findUnique({
+      where: { id: learningModule.id },
+      select: { phaseId: true, phase: { select: { name: true } } },
+    });
+
+    if (targetModule) {
+      const [phaseModulesCount, completedPhaseModulesCount] = await Promise.all([
+        tx.learningModule.count({ where: { phaseId: targetModule.phaseId, status: 'PUBLISHED' } }),
+        tx.moduleProgress.count({
+          where: {
+            internId: intern.id,
+            status: 'COMPLETED',
+            module: { phaseId: targetModule.phaseId, status: 'PUBLISHED' },
+          },
+        }),
+      ]);
+
+      if (phaseModulesCount > 0 && completedPhaseModulesCount >= phaseModulesCount) {
+        const internRecord = await tx.intern.findUnique({ where: { id: intern.id }, select: { scaleonId: true } });
+        const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        const code = `CERT-${internRecord?.scaleonId || 'SOINT'}-PH${targetModule.phaseId.slice(0, 4).toUpperCase()}-${dateStr}`;
+
+        await tx.certificate.upsert({
+          where: { internId_phaseId: { internId: intern.id, phaseId: targetModule.phaseId } },
+          create: {
+            internId: intern.id,
+            phaseId: targetModule.phaseId,
+            phaseName: targetModule.phase.name,
+            certificateCode: code,
+          },
+          update: {},
+        });
+      }
+    }
+
     return { alreadyCompleted: false, awardedXp: learningModule.points };
   });
 
@@ -164,6 +200,26 @@ export const completeModule = asyncHandler(async (req: Request, res: Response) =
       : `Module completed! +${result.awardedXp} XP`,
   });
 });
+
+export const getMyCertificates = asyncHandler(async (req: Request, res: Response) => {
+  const userAccountId = req.authUser!.userAccountId;
+  const intern = await prisma.intern.findFirst({
+    where: { userAccountId },
+    select: { id: true, fullName: true, scaleonId: true },
+  });
+  if (!intern) throw ApiError.notFound('Intern not found');
+
+  const certificates = await prisma.certificate.findMany({
+    where: { internId: intern.id },
+    orderBy: { issuedAt: 'desc' },
+    include: {
+      phase: { select: { name: true, description: true } },
+    },
+  });
+
+  sendSuccess(res, certificates);
+});
+
 
 // ── Leaderboard ──────────────────────────────────────────────────
 
@@ -257,6 +313,85 @@ export const listMyTickets = asyncHandler(async (req: Request, res: Response) =>
     include: { messages: { orderBy: { createdAt: 'asc' } } },
   });
   sendSuccess(res, tickets);
+});
+
+export const deleteTicket = asyncHandler(async (req: Request, res: Response) => {
+  const userAccountId = req.authUser!.userAccountId;
+  const intern = await prisma.intern.findFirst({ where: { userAccountId }, select: { id: true } });
+  if (!intern) throw ApiError.notFound('Intern not found');
+
+  const { ticketId } = req.params;
+  const ticket = await prisma.supportTicket.findFirst({
+    where: { id: ticketId, internId: intern.id },
+  });
+
+  if (!ticket) throw ApiError.notFound('Ticket not found or unauthorized');
+
+  await prisma.supportTicket.delete({
+    where: { id: ticketId },
+  });
+
+  sendSuccess(res, { message: 'Ticket deleted successfully' });
+});
+
+export const replyTicket = asyncHandler(async (req: Request, res: Response) => {
+  const userAccountId = req.authUser!.userAccountId;
+  const intern = await prisma.intern.findFirst({ where: { userAccountId }, select: { id: true } });
+  if (!intern) throw ApiError.notFound('Intern not found');
+
+  const { ticketId } = req.params;
+  const { message } = req.body;
+  if (!message || !message.trim()) throw ApiError.badRequest('Message content is required');
+
+  const ticket = await prisma.supportTicket.findFirst({
+    where: { id: ticketId, internId: intern.id },
+  });
+  if (!ticket) throw ApiError.notFound('Ticket not found or unauthorized');
+
+  const newMessage = await prisma.ticketMessage.create({
+    data: {
+      ticketId,
+      senderId: userAccountId,
+      senderType: 'INTERN',
+      message: message.trim(),
+    },
+  });
+
+  if (ticket.status === 'RESOLVED') {
+    await prisma.supportTicket.update({
+      where: { id: ticketId },
+      data: { status: 'OPEN', resolvedAt: null },
+    });
+  }
+
+  sendSuccess(res, newMessage, 201);
+});
+
+export const updateTicketStatus = asyncHandler(async (req: Request, res: Response) => {
+  const userAccountId = req.authUser!.userAccountId;
+  const intern = await prisma.intern.findFirst({ where: { userAccountId }, select: { id: true } });
+  if (!intern) throw ApiError.notFound('Intern not found');
+
+  const { ticketId } = req.params;
+  const { status } = req.body;
+  if (!['OPEN', 'IN_PROGRESS', 'RESOLVED'].includes(status)) {
+    throw ApiError.badRequest('Invalid ticket status');
+  }
+
+  const ticket = await prisma.supportTicket.findFirst({
+    where: { id: ticketId, internId: intern.id },
+  });
+  if (!ticket) throw ApiError.notFound('Ticket not found or unauthorized');
+
+  const updated = await prisma.supportTicket.update({
+    where: { id: ticketId },
+    data: {
+      status,
+      resolvedAt: status === 'RESOLVED' ? new Date() : null,
+    },
+  });
+
+  sendSuccess(res, updated);
 });
 
 // ── Admin Analytics ────────────────────────────────────────────────
