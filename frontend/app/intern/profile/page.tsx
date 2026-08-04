@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, KeyboardEvent } from "react";
 import { api } from "@/app/lib/api";
 import { useAuth } from "@/app/lib/auth-context";
+import { useFetch } from "@/app/lib/hooks";
 import {
   User, GraduationCap, Briefcase, Camera,
   Phone, Mail, CheckCircle2, X, AlertCircle, Eye, EyeOff, Lock,
@@ -41,6 +42,15 @@ interface CertificateItem {
     name: string;
     description: string | null;
   };
+}
+
+interface InternOfWeekRecord {
+  id: string;
+  weekLabel: string;
+  weekXp: number;
+  reason: string;
+  createdAt: string;
+  intern: { fullName: string; scaleonId: string };
 }
 
 // ─── Validation ───────────────────────────────────────────────────────────────
@@ -330,6 +340,15 @@ function CertificateCard({ cert, internName }: { cert: CertificateItem; internNa
 
 export default function InternProfilePage() {
   const { user, refetch } = useAuth();
+  const { data: iotwHistory } = useFetch<InternOfWeekRecord[]>("/learning/intern-of-week/history");
+
+  const myHistory = (iotwHistory ?? []).filter(
+    (r) => r.intern?.scaleonId === user?.intern?.scaleonId
+  );
+  const isCurrentIotw =
+    (iotwHistory ?? []).length > 0 &&
+    (iotwHistory ?? [])[0].intern?.scaleonId === user?.intern?.scaleonId;
+
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
@@ -478,6 +497,51 @@ export default function InternProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* ── Intern of the Week badge ───────────────────────── */}
+      {isCurrentIotw && (
+        <div className="bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border border-amber-200/90 rounded-2xl p-5 flex items-center gap-4 shadow-sm animate-in fade-in duration-300">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-300/40 text-amber-600 flex items-center justify-center text-2xl font-bold flex-shrink-0 shadow-inner">
+            🏆
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-200/70 border border-amber-300/60 px-2 py-0.5 rounded-full">
+                Top Performer
+              </span>
+              <p className="text-xs text-amber-700 font-medium">{(iotwHistory ?? [])[0].weekLabel}</p>
+            </div>
+            <h3 className="text-base font-bold text-amber-950 mt-0.5">Intern of the Week!</h3>
+            {(iotwHistory ?? [])[0].reason && (
+              <p className="text-xs text-amber-800/90 italic mt-0.5">&quot;{(iotwHistory ?? [])[0].reason}&quot;</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Intern of the Week history ────────────────────── */}
+      {myHistory.length > 0 && (
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-3 shadow-sm">
+          <h2 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+            🏅 Intern of the Week History ({myHistory.length})
+          </h2>
+          <div className="divide-y divide-slate-100">
+            {myHistory.map((r) => (
+              <div key={r.id} className="flex items-center justify-between py-2.5">
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">{r.weekLabel}</p>
+                  {r.reason && (
+                    <p className="text-xs text-slate-500 italic mt-0.5">&quot;{r.reason}&quot;</p>
+                  )}
+                </div>
+                <span className="text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200/60 px-2.5 py-1 rounded-lg flex-shrink-0 ml-3">
+                  +{r.weekXp} XP
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Form ────────────────────────────────────────────── */}
       <form onSubmit={handleSave} className="space-y-5">

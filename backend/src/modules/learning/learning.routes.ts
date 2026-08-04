@@ -30,4 +30,10 @@ router.post('/live-sessions/create', authenticate(), requireUserType('ADMIN'), L
 router.get('/support/all-tickets', authenticate(), requireUserType('ADMIN'), LC.adminListTickets);
 router.get('/analytics', authenticate(), requireUserType('ADMIN'), LC.getAnalytics);
 
+// Intern of the Week routes
+router.get('/intern-of-week', authenticate(), LC.getInternOfWeek);
+router.get('/intern-of-week/history', authenticate(), LC.getInternOfWeekHistory);
+router.post('/intern-of-week', authenticate(), requireUserType('ADMIN'), LC.adminSetInternOfWeek);
+router.delete('/intern-of-week/:id', authenticate(), requireUserType('ADMIN'), LC.adminDeleteInternOfWeek);
+
 export default router;
