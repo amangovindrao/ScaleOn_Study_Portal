@@ -210,6 +210,7 @@ model Intern {
   liveAttendance LiveSessionAttendee[]
   supportTickets SupportTicket[]
   certificates   Certificate[]
+  internOfWeekHistory InternOfWeek[]
 
 
   @@index([internshipRoleId])
@@ -618,6 +619,23 @@ model DailyActivity {
   @@unique([internId, date])
   @@index([internId])
   @@index([date])
+}
+
+model InternOfWeek {
+  id          String   @id @default(uuid())
+  internId    String
+  weekStart   DateTime @db.Date          // Monday of that ISO week
+  weekLabel   String                     // "Week of Jul 28, 2026"
+  weekXp      Int      @default(0)       // XP earned that week
+  reason      String   @default("")      // admin-entered recognition note
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  intern Intern @relation(fields: [internId], references: [id], onDelete: Cascade)
+
+  @@unique([weekStart])           // one winner per week
+  @@index([internId])
+  @@index([weekStart])
 }
 
 // ------------------------------------------------------------

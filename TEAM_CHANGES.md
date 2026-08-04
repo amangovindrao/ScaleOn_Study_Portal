@@ -7,6 +7,37 @@
 
 ---
 
+## [2026-08-04] — Intern of the Week Admin Portal & Backend Integration (Aakif - feature/admin-intern-of-week)
+
+### 🔎 What Was Changed
+Completed Aakif's task for **Intern of the Week**:
+- Added `InternOfWeek` model & relations to backend Prisma schema and synced DB schema.
+- Implemented backend controller handlers for getting current winner, retrieving winner history, setting weekly winner (Admin only), and deleting winner entries.
+- Created new dedicated Admin page at `/admin/intern-of-week` to crown weekly winners with XP & recognition notes, view current active winner banner, and manage winner history table.
+- Added "Intern of Week" nav link with Trophy icon to `AdminShell.tsx`.
+- Integrated "Intern of the Week" trophy badge and history list card into intern Profile page (`/intern/profile`).
+
+### 📝 Files Modified
+
+#### Frontend
+| File | Change |
+|---|---|
+| [`frontend/app/admin/intern-of-week/page.tsx`](./frontend/app/admin/intern-of-week/page.tsx) | **NEW** — Admin page for setting weekly winner, viewing active winner showcase, and managing history table |
+| [`frontend/app/admin/components/AdminShell.tsx`](./frontend/app/admin/components/AdminShell.tsx) | Added "Intern of Week" nav item with Trophy icon |
+| [`frontend/app/intern/profile/page.tsx`](./frontend/app/intern/profile/page.tsx) | Added Intern of the Week trophy badge banner and history section |
+
+#### Backend
+| File | Change |
+|---|---|
+| [`backend/prisma/schema.prisma`](./backend/prisma/schema.prisma) | Added `InternOfWeek` model and `internOfWeekHistory` relation on `Intern` |
+| [`backend/src/modules/learning/learning.controller.ts`](./backend/src/modules/learning/learning.controller.ts) | Added `getInternOfWeek`, `getInternOfWeekHistory`, `adminSetInternOfWeek`, and `adminDeleteInternOfWeek` |
+| [`backend/src/modules/learning/learning.routes.ts`](./backend/src/modules/learning/learning.routes.ts) | Registered `/learning/intern-of-week` endpoints |
+
+### 👥 What Teammates Need to Update
+- Run `npx prisma generate` in `backend/` if pulling schema changes.
+
+---
+
 ## [2026-08-04] — Fixed Admin Layout & Added Admin Analytics
 
 ### 🔎 What Was Changed

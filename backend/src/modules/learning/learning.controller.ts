@@ -439,3 +439,89 @@ export const adminListTickets = asyncHandler(async (_req: Request, res: Response
   });
   sendSuccess(res, tickets);
 });
+
+// ── Intern of the Week Handlers ─────────────────────────────────────
+
+export const getInternOfWeek = asyncHandler(async (_req: Request, res: Response) => {
+  const record = await prisma.internOfWeek.findFirst({
+    orderBy: { weekStart: 'desc' },
+    include: {
+      intern: {
+        select: {
+          id: true,
+          fullName: true,
+          scaleonId: true,
+          internshipRole: { select: { name: true, code: true } },
+        },
+      },
+    },
+  });
+  sendSuccess(res, record ?? null);
+});
+
+export const getInternOfWeekHistory = asyncHandler(async (_req: Request, res: Response) => {
+  const history = await prisma.internOfWeek.findMany({
+    orderBy: { weekStart: 'desc' },
+    take: 50,
+    include: {
+      intern: {
+        select: {
+          id: true,
+          fullName: true,
+          scaleonId: true,
+          internshipRole: { select: { name: true, code: true } },
+        },
+      },
+    },
+  });
+  sendSuccess(res, history);
+});
+
+export const adminSetInternOfWeek = asyncHandler(async (req: Request, res: Response) => {
+  const { internId, weekStart, weekXp, reason } = req.body;
+
+  if (!internId || !weekStart) {
+    throw ApiError.badRequest('internId and weekStart are required');
+  }
+
+  const date = new Date(weekStart);
+  date.setHours(0, 0, 0, 0);
+
+  const weekLabel = `Week of ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+
+  const record = await prisma.internOfWeek.upsert({
+    where: { weekStart: date },
+    create: {
+      internId,
+      weekStart: date,
+      weekLabel,
+      weekXp: Number(weekXp ?? 0),
+      reason: reason ?? '',
+    },
+    update: {
+      internId,
+      weekLabel,
+      weekXp: Number(weekXp ?? 0),
+      reason: reason ?? '',
+    },
+    include: {
+      intern: {
+        select: {
+          id: true,
+          fullName: true,
+          scaleonId: true,
+          internshipRole: { select: { name: true, code: true } },
+        },
+      },
+    },
+  });
+
+  sendSuccess(res, record, 201);
+});
+
+export const adminDeleteInternOfWeek = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  await prisma.internOfWeek.delete({ where: { id } });
+  sendSuccess(res, { message: 'Intern of Week entry removed successfully' });
+});
+
