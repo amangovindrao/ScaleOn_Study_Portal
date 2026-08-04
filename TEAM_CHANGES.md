@@ -7,6 +7,29 @@
 
 ---
 
+## [2026-08-04] — Fixed Admin Layout & Added Admin Analytics
+
+### 🔎 What Was Changed
+Restored the `AdminShell.tsx` component which was accidentally overwritten by the Live Sessions page. Moved the Live Sessions code to its correct path (`/admin/live-sessions/page.tsx`). Implemented the Admin Analytics backend endpoint and hooked it up to the Admin Dashboard. Seeded the database with real test data (`db:seed-test`).
+
+### 📝 Files Modified
+
+#### Frontend
+| File | Change |
+|---|---|
+| [`frontend/app/admin/components/AdminShell.tsx`](./frontend/app/admin/components/AdminShell.tsx) | Restored the layout component code |
+| [`frontend/app/admin/live-sessions/page.tsx`](./frontend/app/admin/live-sessions/page.tsx) | Created new page with the accidentally overwritten code |
+| [`frontend/app/admin/dashboard/page.tsx`](./frontend/app/admin/dashboard/page.tsx) | Updated to fetch and display real admin analytics |
+
+#### Backend
+| File | Change |
+|---|---|
+| [`backend/src/modules/interns/intern.service.ts`](./backend/src/modules/interns/intern.service.ts) | Added `getAnalyticsSummary` logic |
+| [`backend/src/modules/interns/intern.controller.ts`](./backend/src/modules/interns/intern.controller.ts) | Added controller for analytics endpoint |
+| [`backend/src/modules/interns/intern.routes.ts`](./backend/src/modules/interns/intern.routes.ts) | Added `GET /analytics/summary` route |
+
+---
+
 ## [2026-08-04] — Added "My Certifications" Section & Automated Issue System
 
 ### 🔎 What Was Changed

@@ -12,6 +12,7 @@ router.use(authenticate(), requireUserType('ADMIN'));
 
 router.get('/', requirePermission('intern.view'), validate(Schemas.listInternsSchema), InternController.listInterns);
 router.post('/', requirePermission('intern.create'), validate(Schemas.createInternSchema), InternController.createIntern);
+router.get('/analytics/summary', requirePermission('intern.view'), InternController.getAnalyticsSummary);
 router.get('/:id', requirePermission('intern.view'), InternController.getIntern);
 router.patch('/:id', requirePermission('intern.update'), validate(Schemas.updateInternSchema), InternController.updateIntern);
 router.delete('/:id', requirePermission('intern.delete'), InternController.deleteIntern);
