@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/app/lib/auth-context";
 import { NavBar } from "@/app/components/ui/navbar";
 import { LayoutDashboard, BookOpen, Trophy, Video, ClipboardList, HelpCircle, User, LogOut } from "lucide-react";
@@ -39,7 +40,7 @@ export default function InternShell({ children }: { children: React.ReactNode })
 
   const displayName = user.intern?.fullName ?? user.email;
   const initials = displayName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-  const activeNav = NAV_ITEMS.find(n => pathname.startsWith(n.url))?.name ?? "Dashboard";
+  const activeNav = NAV_ITEMS.find(n => pathname.startsWith(n.url))?.name;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/10">
@@ -55,9 +56,9 @@ export default function InternShell({ children }: { children: React.ReactNode })
           <NavBar items={NAV_ITEMS} activeItem={activeNav} />
 
           <div className="flex items-center gap-2">
-            <a href="/intern/profile" className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white text-[10px] font-bold shadow-sm" title="Profile">
+            <Link href="/intern/profile" className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white text-[10px] font-bold shadow-sm" title="Profile">
               {initials}
-            </a>
+            </Link>
             <button onClick={async () => { await logout(); router.replace("/login"); }}
               className="text-slate-400 hover:text-red-500 transition p-1.5 rounded-lg hover:bg-red-50" title="Sign out">
               <LogOut size={15} />

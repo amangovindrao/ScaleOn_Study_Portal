@@ -40,6 +40,7 @@ export function ReviewModal({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!submission) return;
     const numScore = parseInt(score, 10);
     if (isNaN(numScore) || numScore < 0 || numScore > maxScore) {
       setError(`Score must be a number between 0 and ${maxScore}`);

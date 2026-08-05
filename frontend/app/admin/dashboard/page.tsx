@@ -157,14 +157,14 @@ export default function AdminDashboardPage() {
             color="blue"
           />
           <QuickAction
-            href="/admin/live"
+            href="/admin/live-sessions"
             title="Live Session"
             icon={<CalendarPlus size={20} />}
             color="emerald"
           />
           <QuickAction
-            href="/admin/learning"
-            title="Learning"
+            href="/admin/batches"
+            title="Batches"
             icon={<BookOpen size={20} />}
             color="purple"
           />
