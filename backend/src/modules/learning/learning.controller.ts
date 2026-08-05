@@ -393,6 +393,54 @@ export const updateTicketStatus = asyncHandler(async (req: Request, res: Respons
 
   sendSuccess(res, updated);
 });
+// ── Admin Support ────────────────────────────────────────────────
+export const adminReplyTicket = asyncHandler(async (req: Request, res: Response) => {
+  const userAccountId = req.authUser!.userAccountId;
+  const { ticketId } = req.params;
+  const { message } = req.body;
+  if (!message || !message.trim()) throw ApiError.badRequest('Message content is required');
+
+  const ticket = await prisma.supportTicket.findFirst({ where: { id: ticketId } });
+  if (!ticket) throw ApiError.notFound('Ticket not found');
+
+  const newMessage = await prisma.ticketMessage.create({
+    data: {
+      ticketId,
+      senderId: userAccountId,
+      senderType: 'ADMIN',
+      message: message.trim(),
+    },
+  });
+
+  if (ticket.status === 'RESOLVED') {
+    await prisma.supportTicket.update({
+      where: { id: ticketId },
+      data: { status: 'OPEN', resolvedAt: null },
+    });
+  }
+
+  sendSuccess(res, newMessage, 201);
+});
+
+export const adminUpdateTicketStatus = asyncHandler(async (req: Request, res: Response) => {
+  const { ticketId } = req.params;
+  const { status } = req.body;
+  if (!['OPEN', 'IN_PROGRESS', 'RESOLVED'].includes(status)) {
+    throw ApiError.badRequest('Invalid ticket status');
+  }
+
+  const ticket = await prisma.supportTicket.findFirst({ where: { id: ticketId } });
+  if (!ticket) throw ApiError.notFound('Ticket not found');
+
+  const updated = await prisma.supportTicket.update({
+    where: { id: ticketId },
+    data: {
+      status,
+      resolvedAt: status === 'RESOLVED' ? new Date() : null,
+    },
+  });
+  sendSuccess(res, updated);
+});
 
 // ── Admin Analytics ────────────────────────────────────────────────
 

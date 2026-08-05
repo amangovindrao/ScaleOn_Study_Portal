@@ -28,6 +28,8 @@ router.patch('/modules/:id', authenticate(), requireUserType('ADMIN'), LC.update
 router.post('/assignments/create', authenticate(), requireUserType('ADMIN'), LC.adminCreateAssignment);
 router.post('/live-sessions/create', authenticate(), requireUserType('ADMIN'), LC.adminCreateLiveSession);
 router.get('/support/all-tickets', authenticate(), requireUserType('ADMIN'), LC.adminListTickets);
+router.post('/support/tickets/:ticketId/admin-messages', authenticate(), requireUserType('ADMIN'), LC.adminReplyTicket);
+router.patch('/support/tickets/:ticketId/admin-status', authenticate(), requireUserType('ADMIN'), LC.adminUpdateTicketStatus);
 router.get('/analytics', authenticate(), requireUserType('ADMIN'), LC.getAnalytics);
 
 // Intern of the Week routes
