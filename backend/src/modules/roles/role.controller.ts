@@ -197,3 +197,18 @@ export const updateBatch = asyncHandler(async (req: Request, res: Response) => {
   });
   sendSuccess(res, batch);
 });
+
+export const deleteBatch = asyncHandler(async (req: Request, res: Response) => {
+  const batch = await prisma.batch.findUnique({
+    where: { id: req.params.id },
+    include: { _count: { select: { interns: true, enrollments: true } } },
+  });
+  
+  if (!batch) throw ApiError.notFound('Batch not found');
+  if (batch._count.interns > 0 || batch._count.enrollments > 0) {
+    throw ApiError.conflict('Cannot delete a batch that has interns or enrollments associated with it.');
+  }
+
+  await prisma.batch.delete({ where: { id: req.params.id } });
+  sendSuccess(res, { deleted: true }, 200);
+});
