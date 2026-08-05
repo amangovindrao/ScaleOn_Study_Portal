@@ -268,13 +268,43 @@ export const submitAssignment = asyncHandler(async (req: Request, res: Response)
   const intern = await prisma.intern.findFirst({ where: { userAccountId }, select: { id: true } });
   if (!intern) throw ApiError.notFound('Intern not found');
 
-  const { submissionUrl, submissionText } = req.body;
+  const { assignmentId } = req.params;
+  const assignment = await prisma.assignment.findUnique({ where: { id: assignmentId } });
+  if (!assignment) throw ApiError.notFound('Assignment not found');
+
+  if (assignment.dueDate && new Date(assignment.dueDate) < new Date()) {
+    throw ApiError.badRequest('Deadline has passed. Submissions can no longer be created or modified.');
+  }
+
+  const submissionUrl = req.body.submissionUrl || req.body.liveUrl || '';
+  const submissionText = req.body.submissionText || '';
+
   const submission = await prisma.assignmentSubmission.upsert({
-    where: { assignmentId_internId: { assignmentId: req.params.assignmentId, internId: intern.id } },
-    create: { assignmentId: req.params.assignmentId, internId: intern.id, submissionUrl, submissionText, status: 'SUBMITTED', submittedAt: new Date() },
+    where: { assignmentId_internId: { assignmentId, internId: intern.id } },
+    create: { assignmentId, internId: intern.id, submissionUrl, submissionText, status: 'SUBMITTED', submittedAt: new Date() },
     update: { submissionUrl, submissionText, status: 'SUBMITTED', submittedAt: new Date() },
   });
   sendSuccess(res, submission);
+});
+
+export const deleteSubmission = asyncHandler(async (req: Request, res: Response) => {
+  const userAccountId = req.authUser!.userAccountId;
+  const intern = await prisma.intern.findFirst({ where: { userAccountId }, select: { id: true } });
+  if (!intern) throw ApiError.notFound('Intern not found');
+
+  const { assignmentId } = req.params;
+  const assignment = await prisma.assignment.findUnique({ where: { id: assignmentId } });
+  if (!assignment) throw ApiError.notFound('Assignment not found');
+
+  if (assignment.dueDate && new Date(assignment.dueDate) < new Date()) {
+    throw ApiError.badRequest('Deadline has passed. Submissions can no longer be deleted.');
+  }
+
+  await prisma.assignmentSubmission.delete({
+    where: { assignmentId_internId: { assignmentId, internId: intern.id } },
+  });
+
+  sendSuccess(res, { message: 'Submission deleted successfully' });
 });
 
 // ── Live Sessions ──────────────────────────────────────────────────
@@ -413,6 +443,115 @@ export const getAnalytics = asyncHandler(async (_req: Request, res: Response) =>
   });
 });
 
+// Admin: list all assignments with submission stats
+export const adminListAssignments = asyncHandler(async (req: Request, res: Response) => {
+  const { search, moduleId, dueDateRange } = req.query;
+
+  const where: any = {};
+  if (search) {
+    where.OR = [
+      { title: { contains: String(search), mode: 'insensitive' } },
+      { description: { contains: String(search), mode: 'insensitive' } },
+    ];
+  }
+  if (moduleId && moduleId !== 'all') {
+    where.moduleId = String(moduleId);
+  }
+  if (dueDateRange && dueDateRange !== 'all') {
+    const now = new Date();
+    if (dueDateRange === 'overdue') {
+      where.dueDate = { lt: now };
+    } else if (dueDateRange === 'upcoming') {
+      where.dueDate = { gte: now };
+    } else if (dueDateRange === 'no_due_date') {
+      where.dueDate = null;
+    }
+  }
+
+  const assignments = await prisma.assignment.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      module: { select: { id: true, title: true } },
+      submissions: { select: { id: true, status: true, score: true, internId: true } },
+      _count: { select: { submissions: true } }
+    }
+  });
+
+  const formatted = assignments.map(asgn => {
+    const subs = asgn.submissions || [];
+    return {
+      ...asgn,
+      submissionStats: {
+        total: subs.length,
+        pending: subs.filter(s => s.status === 'PENDING').length,
+        submitted: subs.filter(s => s.status === 'SUBMITTED').length,
+        reviewed: subs.filter(s => s.status === 'REVIEWED').length,
+        approved: subs.filter(s => s.status === 'APPROVED').length,
+        rejected: subs.filter(s => s.status === 'REJECTED').length,
+      }
+    };
+  });
+
+  sendSuccess(res, formatted);
+});
+
+// Admin: get single assignment details & submissions
+export const adminGetAssignmentById = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const assignment = await prisma.assignment.findUnique({
+    where: { id },
+    include: {
+      module: { select: { id: true, title: true } },
+      submissions: {
+        include: {
+          intern: { select: { id: true, fullName: true, scaleonId: true, userAccount: { select: { email: true } } } }
+        },
+        orderBy: { submittedAt: 'desc' }
+      },
+      _count: { select: { submissions: true } }
+    }
+  });
+  if (!assignment) throw ApiError.notFound('Assignment not found');
+
+  const subs = assignment.submissions || [];
+  const formattedSubmissions = subs.map(s => ({
+    id: s.id,
+    assignmentId: s.assignmentId,
+    internId: s.internId,
+    intern: {
+      id: s.intern?.id || s.internId,
+      scaleonId: s.intern?.scaleonId || s.internId,
+      fullName: s.intern?.fullName || 'Intern',
+      email: s.intern?.userAccount?.email || '',
+    },
+    internName: s.intern?.fullName || 'Intern',
+    internEmail: s.intern?.userAccount?.email || '',
+    internScaleonId: s.intern?.scaleonId || s.internId,
+    submissionUrl: s.submissionUrl,
+    submissionText: s.submissionText,
+    submittedAt: s.submittedAt ? s.submittedAt.toISOString() : s.createdAt.toISOString(),
+    status: s.status,
+    score: s.score,
+    feedback: s.feedback,
+    reviewedAt: s.reviewedAt ? s.reviewedAt.toISOString() : null,
+    reviewedBy: s.reviewedBy
+  }));
+
+  sendSuccess(res, {
+    ...assignment,
+    submissions: formattedSubmissions,
+    submissionStats: {
+      total: subs.length,
+      pending: subs.filter(s => s.status === 'PENDING').length,
+      submitted: subs.filter(s => s.status === 'SUBMITTED').length,
+      reviewed: subs.filter(s => s.status === 'REVIEWED').length,
+      approved: subs.filter(s => s.status === 'APPROVED').length,
+      rejected: subs.filter(s => s.status === 'REJECTED').length,
+    }
+  });
+});
+
 // Admin: create assignment
 export const adminCreateAssignment = asyncHandler(async (req: Request, res: Response) => {
   const { title, description, instructions, moduleId, dueDate, maxScore } = req.body;
@@ -420,6 +559,62 @@ export const adminCreateAssignment = asyncHandler(async (req: Request, res: Resp
     data: { title, description, instructions, moduleId, dueDate: dueDate ? new Date(dueDate) : null, maxScore: maxScore ?? 100 },
   });
   sendSuccess(res, assignment, 201);
+});
+
+// Admin: update assignment
+export const adminUpdateAssignment = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { title, description, instructions, moduleId, dueDate, maxScore } = req.body;
+
+  const assignment = await prisma.assignment.update({
+    where: { id },
+    data: {
+      ...(title !== undefined && { title }),
+      ...(description !== undefined && { description }),
+      ...(instructions !== undefined && { instructions }),
+      ...(moduleId !== undefined && { moduleId }),
+      ...(dueDate !== undefined && { dueDate: dueDate ? new Date(dueDate) : null }),
+      ...(maxScore !== undefined && { maxScore: Number(maxScore) }),
+    },
+    include: { module: { select: { id: true, title: true } } }
+  });
+
+  sendSuccess(res, assignment);
+});
+
+// Admin: delete assignment
+export const adminDeleteAssignment = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  await prisma.assignment.delete({ where: { id } });
+  sendSuccess(res, { message: 'Assignment deleted successfully' });
+});
+
+// Admin: review intern submission
+export const adminReviewSubmission = asyncHandler(async (req: Request, res: Response) => {
+  const { submissionId } = req.params;
+  const { score, feedback, status } = req.body;
+
+  const submission = await prisma.assignmentSubmission.update({
+    where: { id: submissionId },
+    data: {
+      score: score !== undefined ? Number(score) : undefined,
+      feedback: feedback !== undefined ? feedback : undefined,
+      status: status || 'REVIEWED',
+      reviewedAt: new Date(),
+      reviewedBy: req.authUser?.userAccountId || 'Admin'
+    }
+  });
+
+  sendSuccess(res, submission);
+});
+
+// Admin/Intern: list modules for assignment dropdowns
+export const listLearningModules = asyncHandler(async (_req: Request, res: Response) => {
+  const modules = await prisma.learningModule.findMany({
+    orderBy: { title: 'asc' },
+    select: { id: true, title: true }
+  });
+  sendSuccess(res, modules);
 });
 
 // Admin: create live session
