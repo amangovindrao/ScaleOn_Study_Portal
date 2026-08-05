@@ -37,6 +37,10 @@ export const getRole = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const createRole = asyncHandler(async (req: Request, res: Response) => {
+  if (req.authUser!.roleSlug !== 'super_admin') {
+    throw ApiError.forbidden('Only Super Admin can create new roles', 'PERMISSION_DENIED');
+  }
+
   const data = createRoleSchema.parse(req.body);
 
   const existing = await prisma.role.findFirst({ where: { OR: [{ name: data.name }, { slug: data.slug }] } });
@@ -51,8 +55,21 @@ export const updateRolePermissions = asyncHandler(async (req: Request, res: Resp
   const { permissionIds } = updateRolePermissionsSchema.parse(req.body);
   const roleId = req.params.id;
 
+  // 1. Only Super Admin can modify role permissions
+  if (req.authUser!.roleSlug !== 'super_admin') {
+    throw ApiError.forbidden('Only Super Admin can modify role permissions.', 'PERMISSION_DENIED');
+  }
+
   const role = await prisma.role.findUnique({ where: { id: roleId } });
   if (!role) throw ApiError.notFound('Role not found');
+
+  // 2. System roles (Super Admin and Admin) permissions are fixed and immutable
+  if (role.slug === 'super_admin' || role.slug === 'admin') {
+    throw ApiError.forbidden(
+      `Permissions for the ${role.name} system role are fixed and cannot be modified.`,
+      'PERMISSION_DENIED',
+    );
+  }
 
   const before = await prisma.rolePermission.findMany({ where: { roleId }, select: { permissionId: true } });
 
