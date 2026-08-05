@@ -37,6 +37,10 @@ export const getRole = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const createRole = asyncHandler(async (req: Request, res: Response) => {
+  if (req.authUser!.roleSlug !== 'super_admin') {
+    throw ApiError.forbidden('Only Super Admin can create new roles', 'PERMISSION_DENIED');
+  }
+
   const data = createRoleSchema.parse(req.body);
 
   const existing = await prisma.role.findFirst({ where: { OR: [{ name: data.name }, { slug: data.slug }] } });
@@ -51,8 +55,21 @@ export const updateRolePermissions = asyncHandler(async (req: Request, res: Resp
   const { permissionIds } = updateRolePermissionsSchema.parse(req.body);
   const roleId = req.params.id;
 
+  // 1. Only Super Admin can modify role permissions
+  if (req.authUser!.roleSlug !== 'super_admin') {
+    throw ApiError.forbidden('Only Super Admin can modify role permissions.', 'PERMISSION_DENIED');
+  }
+
   const role = await prisma.role.findUnique({ where: { id: roleId } });
   if (!role) throw ApiError.notFound('Role not found');
+
+  // 2. System roles (Super Admin and Admin) permissions are fixed and immutable
+  if (role.slug === 'super_admin' || role.slug === 'admin') {
+    throw ApiError.forbidden(
+      `Permissions for the ${role.name} system role are fixed and cannot be modified.`,
+      'PERMISSION_DENIED',
+    );
+  }
 
   const before = await prisma.rolePermission.findMany({ where: { roleId }, select: { permissionId: true } });
 
@@ -179,4 +196,19 @@ export const updateBatch = asyncHandler(async (req: Request, res: Response) => {
     },
   });
   sendSuccess(res, batch);
+});
+
+export const deleteBatch = asyncHandler(async (req: Request, res: Response) => {
+  const batch = await prisma.batch.findUnique({
+    where: { id: req.params.id },
+    include: { _count: { select: { interns: true, enrollments: true } } },
+  });
+  
+  if (!batch) throw ApiError.notFound('Batch not found');
+  if (batch._count.interns > 0 || batch._count.enrollments > 0) {
+    throw ApiError.conflict('Cannot delete a batch that has interns or enrollments associated with it.');
+  }
+
+  await prisma.batch.delete({ where: { id: req.params.id } });
+  sendSuccess(res, { deleted: true }, 200);
 });

@@ -16,5 +16,6 @@ router.patch('/internship-roles/:id', requirePermission('internship_role.manage'
 router.get('/batches', requirePermission('batch.view'), RoleController.listBatches);
 router.post('/batches', requirePermission('batch.manage'), RoleController.createBatch);
 router.patch('/batches/:id', requirePermission('batch.manage'), RoleController.updateBatch);
+router.delete('/batches/:id', requirePermission('batch.manage'), RoleController.deleteBatch);
 
 export default router;

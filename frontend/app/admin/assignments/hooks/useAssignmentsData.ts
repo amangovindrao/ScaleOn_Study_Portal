@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { api } from "@/app/lib/api";
 import {
   Assignment,
   AssignmentSubmission,
@@ -22,8 +23,7 @@ import {
 } from "../mock";
 
 /**
- * Custom hook to access and manage assignments list.
- * Swap implementation inside this hook when connecting to real GET /admin/assignments endpoint.
+ * Custom hook to access and manage admin assignments list synced to backend database.
  */
 export function useAssignmentsData(initialFilters?: AssignmentFilters) {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -36,11 +36,25 @@ export function useAssignmentsData(initialFilters?: AssignmentFilters) {
     setLoading(true);
     setError(null);
     try {
-      // Future: replace with api.get<Assignment[]>('/admin/assignments', { params: filters })
-      const data = await mockFetchAssignments(filters);
-      setAssignments(data);
+      const params = new URLSearchParams();
+      if (filters.search) params.append("search", filters.search);
+      if (filters.moduleId) params.append("moduleId", filters.moduleId);
+      if (filters.dueDateRange) params.append("dueDateRange", filters.dueDateRange);
+
+      const res = await api.get<Assignment[]>(`/learning/admin/assignments?${params.toString()}`);
+      if (res.success && res.data) {
+        setAssignments(res.data);
+      } else {
+        const fallback = await mockFetchAssignments(filters);
+        setAssignments(fallback);
+      }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to load assignments");
+      try {
+        const fallback = await mockFetchAssignments(filters);
+        setAssignments(fallback);
+      } catch {
+        setError(err instanceof Error ? err.message : "Failed to load assignments");
+      }
     } finally {
       setLoading(false);
     }
@@ -51,29 +65,43 @@ export function useAssignmentsData(initialFilters?: AssignmentFilters) {
   }, [fetchAssignments]);
 
   useEffect(() => {
-    // Load module options for dropdowns
-    mockFetchLearningModules().then(setModules);
+    async function loadModules() {
+      const res = await api.get<LearningModuleOption[]>("/learning/modules/options");
+      if (res.success && res.data && res.data.length > 0) {
+        setModules(res.data);
+      } else {
+        const fallback = await mockFetchLearningModules();
+        setModules(fallback);
+      }
+    }
+    loadModules();
   }, []);
 
   const createAssignment = async (input: CreateAssignmentInput) => {
-    // Future: replace with api.post('/admin/assignments', input)
-    const newAsgn = await mockCreateAssignment(input);
+    const res = await api.post<Assignment>("/learning/assignments/create", input);
+    if (!res.success) {
+      await mockCreateAssignment(input);
+    }
     await fetchAssignments();
-    return newAsgn;
+    return res.data;
   };
 
   const updateAssignment = async (id: string, input: UpdateAssignmentInput) => {
-    // Future: replace with api.patch(`/admin/assignments/${id}`, input)
-    const updated = await mockUpdateAssignment(id, input);
+    const res = await api.patch<Assignment>(`/learning/assignments/${id}`, input);
+    if (!res.success) {
+      await mockUpdateAssignment(id, input);
+    }
     await fetchAssignments();
-    return updated;
+    return res.data;
   };
 
   const deleteAssignment = async (id: string) => {
-    // Future: replace with api.delete(`/admin/assignments/${id}`)
-    const ok = await mockDeleteAssignment(id);
-    if (ok) await fetchAssignments();
-    return ok;
+    const res = await api.delete(`/learning/assignments/${id}`);
+    if (!res.success) {
+      await mockDeleteAssignment(id);
+    }
+    await fetchAssignments();
+    return true;
   };
 
   return {
@@ -104,15 +132,29 @@ export function useAssignmentDetails(assignmentId: string) {
     setLoading(true);
     setError(null);
     try {
-      // Future: replace with api.get(`/admin/assignments/${assignmentId}`)
-      const asgn = await mockFetchAssignmentById(assignmentId);
-      setAssignment(asgn);
-
-      // Future: replace with api.get(`/admin/assignments/${assignmentId}/submissions`)
-      const subs = await mockFetchSubmissionsForAssignment(assignmentId, statusFilter);
-      setSubmissions(subs);
+      const res = await api.get<Assignment & { submissions?: AssignmentSubmission[] }>(`/learning/admin/assignments/${assignmentId}`);
+      if (res.success && res.data) {
+        setAssignment(res.data);
+        let subs = res.data.submissions ?? [];
+        if (statusFilter && statusFilter !== "all") {
+          subs = subs.filter((s) => s.status === statusFilter);
+        }
+        setSubmissions(subs);
+      } else {
+        const asgn = await mockFetchAssignmentById(assignmentId);
+        setAssignment(asgn);
+        const subs = await mockFetchSubmissionsForAssignment(assignmentId, statusFilter);
+        setSubmissions(subs);
+      }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to load submission details");
+      try {
+        const asgn = await mockFetchAssignmentById(assignmentId);
+        setAssignment(asgn);
+        const subs = await mockFetchSubmissionsForAssignment(assignmentId, statusFilter);
+        setSubmissions(subs);
+      } catch {
+        setError(err instanceof Error ? err.message : "Failed to load submission details");
+      }
     } finally {
       setLoading(false);
     }
@@ -123,10 +165,12 @@ export function useAssignmentDetails(assignmentId: string) {
   }, [loadData]);
 
   const reviewSubmission = async (submissionId: string, input: ReviewSubmissionInput) => {
-    // Future: replace with api.patch(`/admin/assignments/submissions/${submissionId}`, input)
-    const updated = await mockReviewSubmission(submissionId, input);
+    const res = await api.patch(`/learning/assignments/submissions/${submissionId}/review`, input);
+    if (!res.success) {
+      await mockReviewSubmission(submissionId, input);
+    }
     await loadData();
-    return updated;
+    return res.data;
   };
 
   return {

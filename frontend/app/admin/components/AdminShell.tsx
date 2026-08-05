@@ -5,7 +5,11 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/app/lib/auth-context";
 import { NavBar } from "@/app/components/ui/navbar";
+<<<<<<< HEAD
 import { LayoutDashboard, Users, Package, Shield, Monitor, HelpCircle, Trophy, FileText, LogOut } from "lucide-react";
+=======
+import { LayoutDashboard, Users, Package, Shield, Monitor, Trophy, FileText, Video, LogOut } from "lucide-react";
+>>>>>>> aa64a827bc6f86fc71c8a9f859f6e678e3255323
 
 const NAV_ITEMS = [
   { name: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
@@ -15,7 +19,11 @@ const NAV_ITEMS = [
   { name: "Assignments", url: "/admin/assignments", icon: FileText },
   { name: "Roles", url: "/admin/roles", icon: Shield },
   { name: "Sessions", url: "/admin/sessions", icon: Monitor },
+<<<<<<< HEAD
   { name: "Support", url: "/admin/support", icon: HelpCircle },
+=======
+  { name: "Live Sessions", url: "/admin/live-sessions", icon: Video },
+>>>>>>> aa64a827bc6f86fc71c8a9f859f6e678e3255323
 ];
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
@@ -44,7 +52,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   const displayName = user.admin?.fullName ?? user.email;
   const initials = displayName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-  const activeNav = NAV_ITEMS.find(n => pathname.startsWith(n.url))?.name ?? "Dashboard";
+  const activeNav = NAV_ITEMS.find(n => pathname.startsWith(n.url))?.name;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-slate-50">
