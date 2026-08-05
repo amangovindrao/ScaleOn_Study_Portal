@@ -20,8 +20,8 @@ interface NavBarProps {
 
 export function NavBar({ items, className, activeItem }: NavBarProps) {
   return (
-    <div className={cn("flex justify-center", className)}>
-      <div className="flex items-center gap-1 bg-white/80 border border-slate-200 backdrop-blur-lg py-1 px-1.5 rounded-full shadow-lg shadow-slate-200/50">
+    <div className={cn("flex justify-center min-w-0 flex-1 px-2", className)}>
+      <div className="flex items-center gap-0.5 bg-white/80 border border-slate-200 backdrop-blur-lg py-1 px-1 rounded-full shadow-lg shadow-slate-200/50 max-w-full overflow-x-auto no-scrollbar">
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = activeItem === item.name;
@@ -30,14 +30,14 @@ export function NavBar({ items, className, activeItem }: NavBarProps) {
               key={item.name}
               href={item.url}
               className={cn(
-                "relative cursor-pointer text-sm font-medium px-4 py-2 rounded-full transition-all duration-200",
+                "relative cursor-pointer text-xs sm:text-sm font-medium px-2.5 sm:px-3 py-1.5 rounded-full transition-all duration-200 whitespace-nowrap flex-shrink-0",
                 "text-slate-600 hover:text-blue-600",
                 isActive && "text-blue-600 font-semibold"
               )}
             >
               <span className="hidden md:inline">{item.name}</span>
               <span className="md:hidden">
-                <Icon size={18} strokeWidth={2.5} />
+                <Icon size={16} strokeWidth={2.5} />
               </span>
               {isActive && (
                 <motion.div

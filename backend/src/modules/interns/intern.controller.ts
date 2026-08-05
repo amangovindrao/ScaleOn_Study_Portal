@@ -88,7 +88,7 @@ export const resetInternPassword = asyncHandler(async (req: Request, res: Respon
   sendSuccess(res, { message: 'Password reset successfully', temporaryPassword: newPassword });
 });
 
-export const getAnalyticsSummary = asyncHandler(async (req: Request, res: Response) => {
+export const getAnalyticsSummary = asyncHandler(async (_req: Request, res: Response) => {
   const result = await InternService.getAnalyticsSummary();
   sendSuccess(res, result, 200);
 });
