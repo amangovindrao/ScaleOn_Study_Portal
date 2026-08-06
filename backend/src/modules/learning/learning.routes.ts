@@ -33,6 +33,7 @@ router.patch('/assignments/:id', authenticate(), requireUserType('ADMIN'), LC.ad
 router.delete('/assignments/:id', authenticate(), requireUserType('ADMIN'), LC.adminDeleteAssignment);
 router.patch('/assignments/submissions/:submissionId/review', authenticate(), requireUserType('ADMIN'), LC.adminReviewSubmission);
 router.get('/modules/options', authenticate(), LC.listLearningModules);
+router.get('/live-sessions/admin', authenticate(), requireUserType('ADMIN'), LC.adminListLiveSessions);
 router.post('/live-sessions/create', authenticate(), requireUserType('ADMIN'), LC.adminCreateLiveSession);
 router.get('/support/all-tickets', authenticate(), requireUserType('ADMIN'), LC.adminListTickets);
 router.post('/support/tickets/:ticketId/admin-messages', authenticate(), requireUserType('ADMIN'), LC.adminReplyTicket);

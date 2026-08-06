@@ -86,6 +86,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[] | '*'> = {
     'profile.view_any',
     'profile.edit_any',
     'role.view',
+    'role.manage',
+    'role.assign_permissions',
     'activity_log.view',
   ],
   mentor: ['intern.view', 'profile.view_any', 'login_history.view'],

@@ -362,10 +362,16 @@ export async function deleteIntern(internId: string, actorId: string, ipAddress?
   const intern = await prisma.intern.findUnique({ where: { id: internId }, include: { userAccount: true } });
   if (!intern) throw ApiError.notFound('Intern not found');
 
-  await prisma.userAccount.update({
-    where: { id: intern.userAccount.id },
-    data: { status: 'DELETED', email: `deleted_${Date.now()}_${intern.userAccount.email}` },
-  });
+  await prisma.$transaction([
+    prisma.intern.update({
+      where: { id: internId },
+      data: { status: 'DROPPED' },
+    }),
+    prisma.userAccount.update({
+      where: { id: intern.userAccount.id },
+      data: { status: 'DELETED', email: `deleted_${Date.now()}_${intern.userAccount.email}` },
+    }),
+  ]);
 
   await logAudit({ actorId, actorType: 'ADMIN', action: 'intern.deleted', entityType: 'Intern', entityId: internId, ipAddress });
 }

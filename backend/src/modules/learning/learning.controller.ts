@@ -665,6 +665,15 @@ export const listLearningModules = asyncHandler(async (_req: Request, res: Respo
   sendSuccess(res, modules);
 });
 
+// Admin: list all live sessions
+export const adminListLiveSessions = asyncHandler(async (_req: Request, res: Response) => {
+  const sessions = await prisma.liveSession.findMany({
+    orderBy: { scheduledAt: 'desc' },
+    include: { _count: { select: { attendees: true } } },
+  });
+  sendSuccess(res, sessions);
+});
+
 // Admin: create live session
 export const adminCreateLiveSession = asyncHandler(async (req: Request, res: Response) => {
   const { title, description, hostName, meetingUrl, scheduledAt, duration } = req.body;
