@@ -128,7 +128,7 @@ model UserAccount {
   username            String?       @unique // SO-AI-0001 (interns). null allowed for admins
   email               String        @unique
   phone               String?
-  passwordHash        String?       // null when only Google auth is used
+  passwordHash        String? // null when only Google auth is used
   googleId            String?       @unique
   userType            UserType
   status              AccountStatus @default(PENDING)
@@ -171,8 +171,8 @@ model Admin {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  userAccount   UserAccount @relation(fields: [userAccountId], references: [id], onDelete: Cascade)
-  mentoredInterns Intern[]  @relation("InternMentor")
+  userAccount     UserAccount @relation(fields: [userAccountId], references: [id], onDelete: Cascade)
+  mentoredInterns Intern[]    @relation("InternMentor")
 }
 
 // ------------------------------------------------------------
@@ -180,38 +180,37 @@ model Admin {
 // ------------------------------------------------------------
 
 model Intern {
-  id               String       @id @default(uuid())
-  userAccountId    String       @unique
-  scaleonId        String       @unique // SOINT260001
-  fullName         String
-  internshipRoleId String
-  batchId          String?
-  mentorId         String?
-  startDate        DateTime?
-  endDate          DateTime?
-  status           InternStatus @default(ACTIVE)
-  currentPhase     String?
-  currentModule    String?
-  overallProgress  Float        @default(0) // 0..100
-  attendancePercent Float       @default(0) // 0..100
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  id                String       @id @default(uuid())
+  userAccountId     String       @unique
+  scaleonId         String       @unique // SOINT260001
+  fullName          String
+  internshipRoleId  String
+  batchId           String?
+  mentorId          String?
+  startDate         DateTime?
+  endDate           DateTime?
+  status            InternStatus @default(ACTIVE)
+  currentPhase      String?
+  currentModule     String?
+  overallProgress   Float        @default(0) // 0..100
+  attendancePercent Float        @default(0) // 0..100
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
 
-  userAccount    UserAccount            @relation(fields: [userAccountId], references: [id], onDelete: Cascade)
-  internshipRole InternshipRole         @relation(fields: [internshipRoleId], references: [id])
-  batch          Batch?                 @relation(fields: [batchId], references: [id])
-  mentor         Admin?                 @relation("InternMentor", fields: [mentorId], references: [id])
-  profile        InternProfile?
-  enrollments    InternshipEnrollment[]
-  moduleProgress ModuleProgress[]
-  submissions    AssignmentSubmission[]
-  streak         InternStreak?
-  dailyActivity  DailyActivity[]
-  liveAttendance LiveSessionAttendee[]
-  supportTickets SupportTicket[]
-  certificates   Certificate[]
+  userAccount         UserAccount            @relation(fields: [userAccountId], references: [id], onDelete: Cascade)
+  internshipRole      InternshipRole         @relation(fields: [internshipRoleId], references: [id])
+  batch               Batch?                 @relation(fields: [batchId], references: [id])
+  mentor              Admin?                 @relation("InternMentor", fields: [mentorId], references: [id])
+  profile             InternProfile?
+  enrollments         InternshipEnrollment[]
+  moduleProgress      ModuleProgress[]
+  submissions         AssignmentSubmission[]
+  streak              InternStreak?
+  dailyActivity       DailyActivity[]
+  liveAttendance      LiveSessionAttendee[]
+  supportTickets      SupportTicket[]
+  certificates        Certificate[]
   internOfWeekHistory InternOfWeek[]
-
 
   @@index([internshipRoleId])
   @@index([batchId])
@@ -239,7 +238,7 @@ model InternProfile {
   specialization     String?
   currentRole        String?
   interestedDomains  String[]  @default([])
-  codingProfiles     Json?     // { leetcode, codeforces, hackerrank, codechef }
+  codingProfiles     Json? // { leetcode, codeforces, hackerrank, codechef }
   aiProjects         String?
   achievements       String?
   createdAt          DateTime  @default(now())
@@ -256,7 +255,7 @@ model InternshipRole {
   id             String     @id @default(uuid())
   name           String     @unique // "Artificial Intelligence"
   code           String     @unique // "AI", "SMM", "BD", "SALES" -> used in username
-  usernamePrefix String     // computed: SO-AI, SO-SMM (stored for fast generation)
+  usernamePrefix String // computed: SO-AI, SO-SMM (stored for fast generation)
   description    String?
   status         RoleStatus @default(ACTIVE)
   usernameSeq    Int        @default(0) // last issued username sequence for this role
@@ -475,7 +474,7 @@ enum ModuleStatus {
 
 model LearningPhase {
   id          String      @id @default(uuid())
-  name        String      // "Phase 1", "Phase 2"
+  name        String // "Phase 1", "Phase 2"
   slug        String      @unique
   description String?
   order       Int         @default(0) // display order
@@ -486,7 +485,6 @@ model LearningPhase {
   modules      LearningModule[]
   certificates Certificate[]
 
-
   @@index([status])
 }
 
@@ -495,11 +493,11 @@ model LearningModule {
   phaseId     String
   title       String
   description String?
-  content     String?     // markdown or rich text content
+  content     String? // markdown or rich text content
   videoUrl    String?
   resourceUrl String?
   order       Int         @default(0)
-  duration    Int?        // estimated minutes
+  duration    Int? // estimated minutes
   points      Int         @default(10) // XP points for completion
   status      PhaseStatus @default(DRAFT)
   createdAt   DateTime    @default(now())
@@ -514,16 +512,16 @@ model LearningModule {
 }
 
 model ModuleProgress {
-  id           String       @id @default(uuid())
-  internId     String
-  moduleId     String
-  status       ModuleStatus @default(LOCKED)
-  startedAt    DateTime?
-  completedAt  DateTime?
-  score        Int?         // quiz/assignment score 0-100
-  timeSpent    Int          @default(0) // minutes
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id          String       @id @default(uuid())
+  internId    String
+  moduleId    String
+  status      ModuleStatus @default(LOCKED)
+  startedAt   DateTime?
+  completedAt DateTime?
+  score       Int? // quiz/assignment score 0-100
+  timeSpent   Int          @default(0) // minutes
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
   intern Intern         @relation(fields: [internId], references: [id], onDelete: Cascade)
   module LearningModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
@@ -547,36 +545,36 @@ enum AssignmentStatus {
 }
 
 model Assignment {
-  id          String   @id @default(uuid())
-  moduleId    String?
-  title       String
-  description String?
+  id           String    @id @default(uuid())
+  moduleId     String?
+  title        String
+  description  String?
   instructions String?
-  dueDate     DateTime?
-  maxScore    Int      @default(100)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  dueDate      DateTime?
+  maxScore     Int       @default(100)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  module      LearningModule?      @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  module      LearningModule?        @relation(fields: [moduleId], references: [id], onDelete: SetNull)
   submissions AssignmentSubmission[]
 
   @@index([moduleId])
 }
 
 model AssignmentSubmission {
-  id            String           @id @default(uuid())
-  assignmentId  String
-  internId      String
-  submissionUrl String?
+  id             String           @id @default(uuid())
+  assignmentId   String
+  internId       String
+  submissionUrl  String?
   submissionText String?
-  score         Int?
-  feedback      String?
-  status        AssignmentStatus @default(PENDING)
-  submittedAt   DateTime?
-  reviewedAt    DateTime?
-  reviewedBy    String?
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
+  score          Int?
+  feedback       String?
+  status         AssignmentStatus @default(PENDING)
+  submittedAt    DateTime?
+  reviewedAt     DateTime?
+  reviewedBy     String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
   assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
   intern     Intern     @relation(fields: [internId], references: [id], onDelete: Cascade)
@@ -592,17 +590,19 @@ model AssignmentSubmission {
 // ------------------------------------------------------------
 
 model InternStreak {
-  id             String   @id @default(uuid())
-  internId       String   @unique
-  currentStreak  Int      @default(0)
-  longestStreak  Int      @default(0)
+  id             String    @id @default(uuid())
+  internId       String    @unique
+  currentStreak  Int       @default(0)
+  longestStreak  Int       @default(0)
   lastActiveDate DateTime?
-  totalXp        Int      @default(0) // experience points
-  level          Int      @default(1)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  totalXp        Int       @default(0) // experience points
+  level          Int       @default(1)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   intern Intern @relation(fields: [internId], references: [id], onDelete: Cascade)
+
+  @@index([totalXp(sort: Desc)])
 }
 
 model DailyActivity {
@@ -622,18 +622,18 @@ model DailyActivity {
 }
 
 model InternOfWeek {
-  id          String   @id @default(uuid())
-  internId    String
-  weekStart   DateTime @db.Date          // Monday of that ISO week
-  weekLabel   String                     // "Week of Jul 28, 2026"
-  weekXp      Int      @default(0)       // XP earned that week
-  reason      String   @default("")      // admin-entered recognition note
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(uuid())
+  internId  String
+  weekStart DateTime @db.Date // Monday of that ISO week
+  weekLabel String // "Week of Jul 28, 2026"
+  weekXp    Int      @default(0) // XP earned that week
+  reason    String   @default("") // admin-entered recognition note
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   intern Intern @relation(fields: [internId], references: [id], onDelete: Cascade)
 
-  @@unique([weekStart])           // one winner per week
+  @@unique([weekStart]) // one winner per week
   @@index([internId])
   @@index([weekStart])
 }
@@ -650,17 +650,17 @@ enum LiveSessionStatus {
 }
 
 model LiveSession {
-  id          String            @id @default(uuid())
-  title       String
-  description String?
-  hostName    String
-  meetingUrl  String?
-  scheduledAt DateTime
-  duration    Int?              // minutes
-  status      LiveSessionStatus @default(SCHEDULED)
+  id           String            @id @default(uuid())
+  title        String
+  description  String?
+  hostName     String
+  meetingUrl   String?
+  scheduledAt  DateTime
+  duration     Int? // minutes
+  status       LiveSessionStatus @default(SCHEDULED)
   recordingUrl String?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 
   attendees LiveSessionAttendee[]
 
@@ -669,13 +669,13 @@ model LiveSession {
 }
 
 model LiveSessionAttendee {
-  id            String   @id @default(uuid())
+  id            String    @id @default(uuid())
   liveSessionId String
   internId      String
   joinedAt      DateTime?
   leftAt        DateTime?
-  attended      Boolean  @default(false)
-  createdAt     DateTime @default(now())
+  attended      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
 
   liveSession LiveSession @relation(fields: [liveSessionId], references: [id], onDelete: Cascade)
   intern      Intern      @relation(fields: [internId], references: [id], onDelete: Cascade)
@@ -727,8 +727,8 @@ model SupportTicket {
 model TicketMessage {
   id         String   @id @default(uuid())
   ticketId   String
-  senderId   String   // userAccountId
-  senderType String   // ADMIN or INTERN
+  senderId   String // userAccountId
+  senderType String // ADMIN or INTERN
   message    String
   createdAt  DateTime @default(now())
 
@@ -746,7 +746,7 @@ model Certificate {
   internId        String
   phaseId         String
   certificateCode String   @unique // e.g. "CERT-SOINT260001-PH1-20260803"
-  phaseName       String           // snapshot of phase name at time of issue
+  phaseName       String // snapshot of phase name at time of issue
   issuedAt        DateTime @default(now())
   createdAt       DateTime @default(now())
 
