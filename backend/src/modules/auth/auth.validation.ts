@@ -27,7 +27,6 @@ export const firstLoginSchema = z.object({
   body: z.object({
     newPassword: z.string().min(1, 'Password is required'),
     acceptTerms: z.literal(true, { errorMap: () => ({ message: 'You must accept the terms' }) }),
-    userAccountId: z.string().uuid().optional(),
     profile: z
       .object({
         phone: z.string().optional(),

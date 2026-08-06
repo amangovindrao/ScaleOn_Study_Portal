@@ -40,8 +40,8 @@ export const env = {
   databaseUrl: required('DATABASE_URL'),
 
   jwt: {
-    accessSecret: required('JWT_ACCESS_SECRET', 'dev_access_secret'),
-    refreshSecret: required('JWT_REFRESH_SECRET', 'dev_refresh_secret'),
+    accessSecret: required('JWT_ACCESS_SECRET'),
+    refreshSecret: required('JWT_REFRESH_SECRET'),
     accessExpiresIn: optional('JWT_ACCESS_EXPIRES_IN', '15m'),
     refreshExpiresIn: optional('JWT_REFRESH_EXPIRES_IN', '7d'),
     refreshRememberExpiresIn: optional('JWT_REFRESH_REMEMBER_EXPIRES_IN', '30d'),
@@ -53,7 +53,7 @@ export const env = {
     sameSite: (optional('COOKIE_SAME_SITE', 'lax') as 'lax' | 'strict' | 'none'),
   },
 
-  csrfSecret: required('CSRF_SECRET', 'dev_csrf_secret'),
+  csrfSecret: required('CSRF_SECRET'),
 
   google: {
     clientId: optional('GOOGLE_CLIENT_ID'),

@@ -1,7 +1,7 @@
-import { Router } from 'express';
-import { validate } from '@/middleware/validate.middleware';
 import { authenticate } from '@/middleware/auth.middleware';
 import { authLimiter } from '@/middleware/rateLimit.middleware';
+import { validate } from '@/middleware/validate.middleware';
+import { Router } from 'express';
 import * as AuthController from './auth.controller';
 import * as Schemas from './auth.validation';
 
@@ -15,7 +15,7 @@ router.post('/refresh', authLimiter, AuthController.refreshToken);
 router.post('/forgot-password', authLimiter, validate(Schemas.forgotPasswordSchema), AuthController.forgotPassword);
 router.post('/reset-password', authLimiter, validate(Schemas.resetPasswordSchema), AuthController.resetPassword);
 router.post('/change-password', authenticate(), validate(Schemas.changePasswordSchema), AuthController.changePassword);
-router.post('/first-login/complete', validate(Schemas.firstLoginSchema), AuthController.completeFirstLogin);
+router.post('/first-login/complete', authenticate(), validate(Schemas.firstLoginSchema), AuthController.completeFirstLogin);
 router.get('/me', authenticate(), AuthController.me);
 
 export default router;
