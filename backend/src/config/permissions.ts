@@ -51,6 +51,16 @@ export const PERMISSIONS: PermissionDef[] = [
   { key: 'profile.view_any', name: 'View any profile', group: 'profile' },
   { key: 'profile.edit_any', name: 'Edit any profile', group: 'profile' },
 
+  // Learning & Content
+  { key: 'learning.view', name: 'View learning content & analytics', group: 'learning' },
+  { key: 'learning.manage_phases', name: 'Manage learning phases', group: 'learning' },
+  { key: 'learning.manage_modules', name: 'Manage learning modules', group: 'learning' },
+  { key: 'learning.manage_assignments', name: 'Manage learning assignments', group: 'learning' },
+  { key: 'learning.review_assignments', name: 'Review assignment submissions', group: 'learning' },
+  { key: 'learning.manage_sessions', name: 'Manage live sessions', group: 'learning' },
+  { key: 'learning.manage_tickets', name: 'Manage support tickets', group: 'learning' },
+  { key: 'learning.manage_intern_of_week', name: 'Manage intern of the week', group: 'learning' },
+
   // System
   { key: 'settings.view', name: 'View settings', group: 'system' },
   { key: 'settings.manage', name: 'Manage settings', group: 'system' },
@@ -89,7 +99,15 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[] | '*'> = {
     'role.manage',
     'role.assign_permissions',
     'activity_log.view',
+    'learning.view',
+    'learning.manage_phases',
+    'learning.manage_modules',
+    'learning.manage_assignments',
+    'learning.review_assignments',
+    'learning.manage_sessions',
+    'learning.manage_tickets',
+    'learning.manage_intern_of_week',
   ],
-  mentor: ['intern.view', 'profile.view_any', 'login_history.view'],
+  mentor: ['intern.view', 'profile.view_any', 'login_history.view', 'learning.view', 'learning.review_assignments'],
   intern: [],
 };

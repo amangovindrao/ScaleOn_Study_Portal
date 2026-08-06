@@ -40,8 +40,29 @@ export const createModule = asyncHandler(async (req: Request, res: Response) => 
 });
 
 export const updateModule = asyncHandler(async (req: Request, res: Response) => {
-  const module = await prisma.learningModule.update({ where: { id: req.params.id }, data: req.body });
-  sendSuccess(res, module);
+  const { id } = req.params;
+  const existing = await prisma.learningModule.findUnique({ where: { id } });
+  if (!existing) throw ApiError.notFound('Learning module not found');
+
+  const { phaseId, title, description, content, videoUrl, resourceUrl, order, duration, points, status } = req.body;
+
+  const data: Prisma.LearningModuleUpdateInput = {};
+  if (phaseId !== undefined) data.phase = { connect: { id: phaseId } };
+  if (title !== undefined) data.title = title;
+  if (description !== undefined) data.description = description;
+  if (content !== undefined) data.content = content;
+  if (videoUrl !== undefined) data.videoUrl = videoUrl;
+  if (resourceUrl !== undefined) data.resourceUrl = resourceUrl;
+  if (order !== undefined) data.order = Number(order);
+  if (duration !== undefined) data.duration = duration;
+  if (points !== undefined) data.points = Number(points);
+  if (status !== undefined) data.status = status;
+
+  const updatedModule = await prisma.learningModule.update({
+    where: { id },
+    data,
+  });
+  sendSuccess(res, updatedModule);
 });
 
 // ── Intern: View Learning ──────────────────────────────────────────
