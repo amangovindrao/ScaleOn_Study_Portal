@@ -23,19 +23,20 @@ export default function RolesPage() {
   const [saving, setSaving] = useState(false);
   const [checkedPerms, setCheckedPerms] = useState<Set<string>>(new Set());
 
-  const isSuperAdmin = user?.role?.slug === "super_admin";
+  const isAdmin = user?.userType === "ADMIN";
 
   /**
    * Access Rules:
-   * - System administrator roles ('super_admin' and 'admin') have fixed system permissions and are Read-only.
-   * - Admins cannot edit, create, update, or delete other admins.
-   * - Only Super Admin users (role.slug === "super_admin") can edit permissions for custom/operational roles (Mentor, Intern, etc.).
-   * - Regular Admins can view role permissions, but cannot edit any role's permissions.
+   * - The 'admin' system role has fixed permissions and is Read-only.
+   * - Admins can edit permissions for operational roles (Mentor, Intern, etc.).
    */
   function canEdit(role: Role): boolean {
-    if (role.slug === "super_admin" || role.slug === "admin") return false;
-    return isSuperAdmin;
+    if (role.slug === "admin") return false;
+    return isAdmin;
   }
+
+  // Filter out the super_admin role from the displayed list
+  const visibleRoles = (roles as Role[] | null)?.filter((r) => r.slug !== "super_admin") ?? [];
 
   function openRole(role: Role) {
     setSelected(role);
@@ -74,7 +75,7 @@ export default function RolesPage() {
         <div className="grid lg:grid-cols-2 gap-4">
           {/* Role list */}
           <div className="space-y-3">
-            {(roles as Role[] | null)?.map((role) => {
+            {visibleRoles.map((role) => {
               const editable = canEdit(role);
               const isActive = selected?.id === role.id;
               return (
@@ -137,19 +138,7 @@ export default function RolesPage() {
 
               {!canEdit(selected) && (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-amber-800 text-xs leading-relaxed">
-                  {selected.slug === "super_admin" ? (
-                    <>
-                      <strong>Super Admin Role:</strong> Super Admin permissions are system default constants with full unrestricted access and cannot be modified.
-                    </>
-                  ) : selected.slug === "admin" ? (
-                    <>
-                      <strong>Admin System Role (Read-only):</strong> Admin permissions are system-defined. Admin accounts cannot create, update, or delete other admins; managing admin accounts is strictly reserved for Super Admin.
-                    </>
-                  ) : (
-                    <>
-                      <strong>Read-only Mode:</strong> Only a <strong>Super Admin</strong> can modify permissions for the <strong>{selected.name}</strong> role.
-                    </>
-                  )}
+                  <strong>System Role (Read-only):</strong> Admin permissions are system-defined and cannot be modified.
                 </div>
               )}
 

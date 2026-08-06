@@ -1,17 +1,28 @@
 import { Request, Response } from 'express';
+import { Prisma } from '@prisma/client';
 import { asyncHandler } from '@/utils/asyncHandler';
-import { sendSuccess } from '@/utils/apiResponse';
+import { sendSuccess, buildPagination } from '@/utils/apiResponse';
 import { prisma } from '@/lib/prisma';
 import { ApiError } from '@/utils/apiError';
 
 // ── Admin: CRUD Phases & Modules ──────────────────────────────────
 
-export const listPhases = asyncHandler(async (_req: Request, res: Response) => {
-  const phases = await prisma.learningPhase.findMany({
-    orderBy: { order: 'asc' },
-    include: { modules: { orderBy: { order: 'asc' }, select: { id: true, title: true, order: true, points: true, duration: true, status: true } } },
-  });
-  sendSuccess(res, phases);
+export const listPhases = asyncHandler(async (req: Request, res: Response) => {
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const pageSize = Math.max(1, Number(req.query.pageSize) || 20);
+  const skip = (page - 1) * pageSize;
+
+  const [total, phases] = await Promise.all([
+    prisma.learningPhase.count(),
+    prisma.learningPhase.findMany({
+      orderBy: { order: 'asc' },
+      skip,
+      take: pageSize,
+      include: { modules: { orderBy: { order: 'asc' }, select: { id: true, title: true, order: true, points: true, duration: true, status: true } } },
+    }),
+  ]);
+
+  sendSuccess(res, phases, 200, { pagination: buildPagination(page, pageSize, total) });
 });
 
 export const createPhase = asyncHandler(async (req: Request, res: Response) => {
@@ -40,19 +51,30 @@ export const getMyLearning = asyncHandler(async (req: Request, res: Response) =>
   const intern = await prisma.intern.findFirst({ where: { userAccountId }, select: { id: true } });
   if (!intern) throw ApiError.notFound('Intern not found');
 
-  const phases = await prisma.learningPhase.findMany({
-    where: { status: 'PUBLISHED' },
-    orderBy: { order: 'asc' },
-    include: {
-      modules: {
-        where: { status: 'PUBLISHED' },
-        orderBy: { order: 'asc' },
-        include: { progress: { where: { internId: intern.id } } },
-      },
-    },
-  });
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const pageSize = Math.max(1, Number(req.query.pageSize) || 20);
+  const skip = (page - 1) * pageSize;
 
-  sendSuccess(res, phases);
+  const where: Prisma.LearningPhaseWhereInput = { status: 'PUBLISHED' };
+
+  const [total, phases] = await Promise.all([
+    prisma.learningPhase.count({ where }),
+    prisma.learningPhase.findMany({
+      where,
+      orderBy: { order: 'asc' },
+      skip,
+      take: pageSize,
+      include: {
+        modules: {
+          where: { status: 'PUBLISHED' },
+          orderBy: { order: 'asc' },
+          include: { progress: { where: { internId: intern.id } } },
+        },
+      },
+    }),
+  ]);
+
+  sendSuccess(res, phases, 200, { pagination: buildPagination(page, pageSize, total) });
 });
 
 export const completeModule = asyncHandler(async (req: Request, res: Response) => {
@@ -256,11 +278,21 @@ export const listAssignments = asyncHandler(async (req: Request, res: Response) 
   const intern = await prisma.intern.findFirst({ where: { userAccountId }, select: { id: true } });
   if (!intern) throw ApiError.notFound('Intern not found');
 
-  const assignments = await prisma.assignment.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: { submissions: { where: { internId: intern.id } }, module: { select: { title: true } } },
-  });
-  sendSuccess(res, assignments);
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const pageSize = Math.max(1, Number(req.query.pageSize) || 20);
+  const skip = (page - 1) * pageSize;
+
+  const [total, assignments] = await Promise.all([
+    prisma.assignment.count(),
+    prisma.assignment.findMany({
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: pageSize,
+      include: { submissions: { where: { internId: intern.id } }, module: { select: { title: true } } },
+    }),
+  ]);
+
+  sendSuccess(res, assignments, 200, { pagination: buildPagination(page, pageSize, total) });
 });
 
 export const submitAssignment = asyncHandler(async (req: Request, res: Response) => {
@@ -309,13 +341,25 @@ export const deleteSubmission = asyncHandler(async (req: Request, res: Response)
 
 // ── Live Sessions ──────────────────────────────────────────────────
 
-export const listLiveSessions = asyncHandler(async (_req: Request, res: Response) => {
-  const sessions = await prisma.liveSession.findMany({
-    where: { status: { in: ['SCHEDULED', 'LIVE'] } },
-    orderBy: { scheduledAt: 'asc' },
-    include: { _count: { select: { attendees: true } } },
-  });
-  sendSuccess(res, sessions);
+export const listLiveSessions = asyncHandler(async (req: Request, res: Response) => {
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const pageSize = Math.max(1, Number(req.query.pageSize) || 20);
+  const skip = (page - 1) * pageSize;
+
+  const where: Prisma.LiveSessionWhereInput = { status: { in: ['SCHEDULED', 'LIVE'] } };
+
+  const [total, sessions] = await Promise.all([
+    prisma.liveSession.count({ where }),
+    prisma.liveSession.findMany({
+      where,
+      orderBy: { scheduledAt: 'asc' },
+      skip,
+      take: pageSize,
+      include: { _count: { select: { attendees: true } } },
+    }),
+  ]);
+
+  sendSuccess(res, sessions, 200, { pagination: buildPagination(page, pageSize, total) });
 });
 
 // ── Support Tickets ────────────────────────────────────────────────
@@ -337,12 +381,24 @@ export const listMyTickets = asyncHandler(async (req: Request, res: Response) =>
   const intern = await prisma.intern.findFirst({ where: { userAccountId }, select: { id: true } });
   if (!intern) throw ApiError.notFound('Intern not found');
 
-  const tickets = await prisma.supportTicket.findMany({
-    where: { internId: intern.id },
-    orderBy: { createdAt: 'desc' },
-    include: { messages: { orderBy: { createdAt: 'asc' } } },
-  });
-  sendSuccess(res, tickets);
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const pageSize = Math.max(1, Number(req.query.pageSize) || 20);
+  const skip = (page - 1) * pageSize;
+
+  const where = { internId: intern.id };
+
+  const [total, tickets] = await Promise.all([
+    prisma.supportTicket.count({ where }),
+    prisma.supportTicket.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: pageSize,
+      include: { messages: { orderBy: { createdAt: 'asc' } } },
+    }),
+  ]);
+
+  sendSuccess(res, tickets, 200, { pagination: buildPagination(page, pageSize, total) });
 });
 
 export const deleteTicket = asyncHandler(async (req: Request, res: Response) => {
@@ -684,12 +740,22 @@ export const adminCreateLiveSession = asyncHandler(async (req: Request, res: Res
 });
 
 // Admin: list all tickets
-export const adminListTickets = asyncHandler(async (_req: Request, res: Response) => {
-  const tickets = await prisma.supportTicket.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: { intern: { select: { fullName: true, scaleonId: true } }, messages: true },
-  });
-  sendSuccess(res, tickets);
+export const adminListTickets = asyncHandler(async (req: Request, res: Response) => {
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const pageSize = Math.max(1, Number(req.query.pageSize) || 20);
+  const skip = (page - 1) * pageSize;
+
+  const [total, tickets] = await Promise.all([
+    prisma.supportTicket.count(),
+    prisma.supportTicket.findMany({
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: pageSize,
+      include: { intern: { select: { fullName: true, scaleonId: true } }, messages: true },
+    }),
+  ]);
+
+  sendSuccess(res, tickets, 200, { pagination: buildPagination(page, pageSize, total) });
 });
 
 // ── Intern of the Week Handlers ─────────────────────────────────────

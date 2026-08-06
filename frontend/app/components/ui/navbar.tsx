@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { motion } from "framer-motion";
 import Link from "next/link";
 import { LucideIcon } from "lucide-react";
 import { cn } from "@/app/lib/utils";
@@ -40,14 +39,9 @@ export function NavBar({ items, className, activeItem }: NavBarProps) {
                 <Icon size={16} strokeWidth={2.5} />
               </span>
               {isActive && (
-                <motion.div
-                  layoutId="nav-lamp"
-                  className="absolute inset-0 w-full bg-blue-50 border border-blue-100 rounded-full -z-10"
-                  initial={false}
-                  transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                >
+                <div className="absolute inset-0 w-full bg-blue-50 border border-blue-100 rounded-full -z-10 transition-all duration-200">
                   <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-blue-500 rounded-full" />
-                </motion.div>
+                </div>
               )}
             </Link>
           );

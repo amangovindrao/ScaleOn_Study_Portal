@@ -1,10 +1,10 @@
-import { Request, Response } from 'express';
-import { asyncHandler } from '@/utils/asyncHandler';
-import { sendSuccess } from '@/utils/apiResponse';
-import { setAuthCookies, clearAuthCookies, getRefreshCookie } from '@/utils/cookies';
 import { rotateRefreshToken } from '@/services/session.service';
-import { getClientInfo } from '@/utils/requestInfo';
 import { ApiError } from '@/utils/apiError';
+import { sendSuccess } from '@/utils/apiResponse';
+import { asyncHandler } from '@/utils/asyncHandler';
+import { clearAuthCookies, getRefreshCookie, setAuthCookies } from '@/utils/cookies';
+import { getClientInfo } from '@/utils/requestInfo';
+import { Request, Response } from 'express';
 import * as AuthService from './auth.service';
 
 export const adminLogin = asyncHandler(async (req: Request, res: Response) => {
@@ -121,11 +121,6 @@ export const completeFirstLogin = asyncHandler(async (req: Request, res: Respons
         sessionId = payload.sid;
       } catch { /* token invalid */ }
     }
-  }
-
-  if (!userAccountId) {
-    // Last fallback: accept userAccountId from body (only for first-login flow)
-    userAccountId = req.body.userAccountId;
   }
 
   if (!userAccountId) {

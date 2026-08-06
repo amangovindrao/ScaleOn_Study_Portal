@@ -1,9 +1,9 @@
-import { NextFunction, Request, Response } from 'express';
-import { UserType } from '@prisma/client';
-import { ApiError } from '@/utils/apiError';
-import { verifyAccessToken } from '@/utils/jwt';
 import { prisma } from '@/lib/prisma';
 import { getRolePermissions } from '@/services/permission.service';
+import { ApiError } from '@/utils/apiError';
+import { verifyAccessToken } from '@/utils/jwt';
+import { UserType } from '@prisma/client';
+import { NextFunction, Request, Response } from 'express';
 
 function extractToken(req: Request): string | null {
   const header = req.headers.authorization;
@@ -29,18 +29,20 @@ export function authenticate() {
         throw ApiError.unauthorized('Invalid or expired token', 'INVALID_TOKEN');
       }
 
-      const session = await prisma.session.findUnique({
-        where: { id: payload.sid },
-        select: { isActive: true, revokedAt: true, expiresAt: true, userAccountId: true },
-      });
+      const [session, account] = await Promise.all([
+        prisma.session.findUnique({
+          where: { id: payload.sid },
+          select: { isActive: true, revokedAt: true, expiresAt: true, userAccountId: true, lastActivityAt: true },
+        }),
+        prisma.userAccount.findUnique({
+          where: { id: payload.sub },
+          select: { id: true, status: true, userType: true, roleId: true, role: { select: { slug: true } } },
+        }),
+      ]);
+
       if (!session || !session.isActive || session.revokedAt || session.expiresAt < new Date()) {
         throw ApiError.unauthorized('Session expired or terminated', 'SESSION_INVALID');
       }
-
-      const account = await prisma.userAccount.findUnique({
-        where: { id: payload.sub },
-        select: { id: true, status: true, userType: true, roleId: true, role: { select: { slug: true } } },
-      });
       if (!account || account.status !== 'ACTIVE') {
         throw ApiError.unauthorized('Account is not active', 'ACCOUNT_INACTIVE');
       }
@@ -55,11 +57,16 @@ export function authenticate() {
         permissions,
       };
 
-      // Touch session activity (fire and forget)
-      void prisma.session.update({
-        where: { id: payload.sid },
-        data: { lastActivityAt: new Date() },
-      }).catch(() => undefined);
+      // Touch session activity (fire and forget, but only once every 60 seconds)
+      const now = new Date();
+      const lastActivityAt = session?.lastActivityAt;
+
+      if (!lastActivityAt || now.getTime() - lastActivityAt.getTime() > 60_000) {
+        void prisma.session.update({
+          where: { id: payload.sid },
+          data: { lastActivityAt: now },
+        }).catch(() => undefined);
+      }
 
       next();
     } catch (err) {
