@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { asyncHandler } from '@/utils/asyncHandler';
-import { sendSuccess } from '@/utils/apiResponse';
+import { sendSuccess, buildPagination } from '@/utils/apiResponse';
 import { prisma } from '@/lib/prisma';
 import { invalidateRolePermissions } from '@/services/permission.service';
 import { logAudit } from '@/services/audit.service';
@@ -19,12 +19,22 @@ const updateRolePermissionsSchema = z.object({
   permissionIds: z.array(z.string().uuid()),
 });
 
-export const listRoles = asyncHandler(async (_req: Request, res: Response) => {
-  const roles = await prisma.role.findMany({
-    orderBy: { level: 'desc' },
-    include: { permissions: { include: { permission: true } }, _count: { select: { userAccounts: true } } },
-  });
-  sendSuccess(res, roles);
+export const listRoles = asyncHandler(async (req: Request, res: Response) => {
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const pageSize = Math.max(1, Number(req.query.pageSize) || 20);
+  const skip = (page - 1) * pageSize;
+
+  const [total, roles] = await Promise.all([
+    prisma.role.count(),
+    prisma.role.findMany({
+      orderBy: { level: 'desc' },
+      skip,
+      take: pageSize,
+      include: { permissions: { include: { permission: true } }, _count: { select: { userAccounts: true } } },
+    }),
+  ]);
+
+  sendSuccess(res, roles, 200, { pagination: buildPagination(page, pageSize, total) });
 });
 
 export const getRole = asyncHandler(async (req: Request, res: Response) => {
@@ -105,12 +115,22 @@ export const listPermissions = asyncHandler(async (_req: Request, res: Response)
   sendSuccess(res, permissions);
 });
 
-export const listInternshipRoles = asyncHandler(async (_req: Request, res: Response) => {
-  const roles = await prisma.internshipRole.findMany({
-    orderBy: { name: 'asc' },
-    include: { _count: { select: { interns: true } } },
-  });
-  sendSuccess(res, roles);
+export const listInternshipRoles = asyncHandler(async (req: Request, res: Response) => {
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const pageSize = Math.max(1, Number(req.query.pageSize) || 20);
+  const skip = (page - 1) * pageSize;
+
+  const [total, roles] = await Promise.all([
+    prisma.internshipRole.count(),
+    prisma.internshipRole.findMany({
+      orderBy: { name: 'asc' },
+      skip,
+      take: pageSize,
+      include: { _count: { select: { interns: true } } },
+    }),
+  ]);
+
+  sendSuccess(res, roles, 200, { pagination: buildPagination(page, pageSize, total) });
 });
 
 export const createInternshipRole = asyncHandler(async (req: Request, res: Response) => {
@@ -146,12 +166,22 @@ export const updateInternshipRole = asyncHandler(async (req: Request, res: Respo
   sendSuccess(res, role);
 });
 
-export const listBatches = asyncHandler(async (_req: Request, res: Response) => {
-  const batches = await prisma.batch.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: { _count: { select: { interns: true } } },
-  });
-  sendSuccess(res, batches);
+export const listBatches = asyncHandler(async (req: Request, res: Response) => {
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const pageSize = Math.max(1, Number(req.query.pageSize) || 20);
+  const skip = (page - 1) * pageSize;
+
+  const [total, batches] = await Promise.all([
+    prisma.batch.count(),
+    prisma.batch.findMany({
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: pageSize,
+      include: { _count: { select: { interns: true } } },
+    }),
+  ]);
+
+  sendSuccess(res, batches, 200, { pagination: buildPagination(page, pageSize, total) });
 });
 
 export const createBatch = asyncHandler(async (req: Request, res: Response) => {
